@@ -5,8 +5,6 @@ import logging
 
 LOGGER = logging.getLevelName(__name__)
 # TODO: Create secrets file that is read on starup if exists
-# TODO: Incorporate logger -v would be info, -vv debug, ...
-# TODO: Output should be straight response from Kodi device
 
 class KodiObj():
     def __init__(self, host: str, port: int, user: str, password: str):
