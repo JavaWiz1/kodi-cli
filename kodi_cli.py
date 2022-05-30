@@ -59,7 +59,7 @@ class KodiObj():
             parm_value = input_params.get(parm_name,None)
             if not parm_value:
                 parm_value = parm_entry.get('default', None)
-            self._LOGGER.info(f'  Key: {parm_name:15}  Value: {parm_value}')
+            self._LOGGER.info(f'  Key    : {parm_name:15}  Value: {parm_value}')
             req_parms[parm_name] = parm_value
         return self._call_kodi(method, req_parms)
 
@@ -79,8 +79,8 @@ class KodiObj():
         payload = {"jsonrpc": "2.0", "id": 1, "method": f"{method}", "params": params }
         headers = {"Content-type": "application/json"}
         self._LOGGER.debug(f"URL: {self._base_url}")
-        self._LOGGER.debug(f"  Method:  {method}")
-        self._LOGGER.debug(f"  Payload: {payload}")
+        self._LOGGER.info(f"  Method : {method}")
+        self._LOGGER.info(f"  Payload: {payload}")
 
         retry = 0
         success = False  # default for 1st loop cycle
@@ -109,9 +109,44 @@ class KodiObj():
         # print(f"  [{self.request_success}] ({self.response_status_code}) {self.response_text}")
         return success
 
+    def _help_namespaces(self):
+        print("Kodi namespaces -\n")
+        print("   Namespace       Methods")
+        print("   --------------- ----------------------------------------------------------------------------")
+        for ns in self.get_namespace_list():
+            methods = ""
+            for method in self.get_namespace_command_list(ns):
+                if len(methods) == 0:
+                    methods = method
+                elif len(methods) > 40:
+                    print(f'   {ns:15} {methods},')
+                    ns = ""
+                    methods = method
+                else:
+                    methods = f"{methods}, {method}"
+            print(f'   {ns:15} {methods}\n')
+
+    def _help_namespace(self, ns: str):
+        ns_commands = self.get_namespace_command_list(ns)
+
+        print(f'{ns} namespace commands-\n')
+        print('  Method                    Description')
+        print('  ------------------------- --------------------------------------------')
+        for token in ns_commands:
+            def_block = json.loads(self._namespaces[ns][token])
+            description = def_block['description']
+            method = f'{ns}.{token}'
+            print(f'  {method:25} {description}')
+
+    def _help_namespace_method(self, ns: str, method: str):
+        help_text = json.loads(self._namespaces[ns][method])
+        print(f'Syntax: {ns}.{method}')
+        print('------------------------------------------------------')
+        print(f'{json.dumps(help_text,indent=2)}')
+
     def help(self, tokens: list = None):
         namesp = None
-        topic = None
+        method = None
 
         if tokens:
             if isinstance(tokens, str):
@@ -119,39 +154,25 @@ class KodiObj():
             else:
                 namesp = tokens[0]
                 if len(tokens) > 1:
-                    topic = tokens[1]
+                    method = tokens[1]
 
-        if not namesp or (namesp == "help" and topic == "namespaces"):
-            print('Kodi namespaces:')
-            print('---------------------------')
-            for ns in self.get_namespace_list():
-                print(ns)
+        if not namesp or (namesp == "help" and method == "namespaces"):
+            self._help_namespaces()
             return
 
         if namesp not in self._namespaces.keys():
             print(f'Unknown namespace [{namesp}]. Try help namespaces')
             return
 
-        ns_commands = self.get_namespace_command_list(namesp)
-        if not topic:
-            print(f'{namesp} namespace commands:\n')
-            print('  Method                    Description')
-            print('  ------------------------- --------------------------------------------')
-            for token in ns_commands:
-                def_block = json.loads(self._namespaces[namesp][token])
-                description = def_block['description']
-                method = f'{namesp}.{token}'
-                print(f'  {method:25} {description}')
+        if not method:
+            self._help_namespace(namesp)
             return
         
-        if topic not in ns_commands:
-            print(f'Unknown command [{topic}] in namespace {namesp}')
+        if method not in self.get_namespace_command_list(namesp):
+            print(f'Unknown command [{method}] in namespace {namesp}')
             return
 
-        help_text = json.loads(self._namespaces[namesp][topic])
-        print(f'Syntax: {namesp}.{topic}')
-        print('------------------------------------------------------')
-        print(f'{json.dumps(help_text,indent=2)}')
+        self._help_namespace_method(namesp, method)
 
 def is_integer(token: str) -> bool:
     is_int = True
@@ -170,6 +191,15 @@ def is_boolean(token: str) -> bool:
     # except ValueError:
     #     is_bool = False
     return is_bool
+def is_list(token: str) -> bool:
+    is_list = False
+    if token.startswith("[") and token.endswith("]"):
+        is_list = True
+    return is_list
+
+def make_list_from_string(token: str) -> list:
+    text = token[1:-1]
+    return text.split(",")
 
 def parse_input(args: list) -> (str, str, dict):
     cmd = None
@@ -183,12 +213,15 @@ def parse_input(args: list) -> (str, str, dict):
                 parm_kwargs = {}
                 for parm_block in args[2:]:
                     token = parm_block.split("=")
-                    if is_integer(token[1]):
-                        parm_kwargs[token[0]] = int(token[1])
-                    elif is_boolean(token[1]):
-                        parm_kwargs[token[0]] = bool(token[1])
-                    else:
-                        parm_kwargs[token[0]] = token[1]
+                    if len(token) > 1:
+                        if is_list(token[1]):
+                            parm_kwargs[token[0]] = make_list_from_string(token[1])
+                        elif is_integer(token[1]):
+                            parm_kwargs[token[0]] = int(token[1])
+                        elif is_boolean(token[1]):
+                            parm_kwargs[token[0]] = bool(token[1])
+                        else:
+                            parm_kwargs[token[0]] = token[1]
 
 
     return cmd, sub_cmd, parm_kwargs
@@ -205,6 +238,7 @@ def main():
     parser.add_argument("-P","--port", type=int, default=8080, help="Kodi RPC listen port")
     parser.add_argument("-u","--user", type=str, default='kodi', help="Kodi authenticaetion username")
     parser.add_argument("-p","--password", type=str, default='kodi', help="Kodi autentication password")
+    parser.add_argument("-f","--format", action="store_true", help="Format json output")
     parser.add_argument("-v","--verbose", action='count', help="Turn out verbose output, more parms increase verbosity")
     parser.add_argument("command", type=str, nargs='*', help="RPC command  cmd.sub-cmd (help namespace to list)")
     args = parser.parse_args()
@@ -215,8 +249,10 @@ def main():
             loglvl = logging.INFO
         elif args.verbose > 1:
             loglvl=logging.DEBUG
-    setup_logging(loglvl)
     
+    setup_logging(loglvl)
+    LOGGER = logging.getLogger(__name__)
+
     kodi = KodiObj(args.host, args.port, args.user, args.password)
     if not args.command:
         kodi.help()
@@ -228,10 +264,10 @@ def main():
             kodi.help(cmd)
         elif kodi.check_command(cmd, sub_cmd):
             kodi.send_request(cmd, sub_cmd, params)
-            print(kodi.response_text)
-        else:
-            LOGGER.error(f'Sorry {cmd}.{sub_cmd} is not valid.')
-
+            response = kodi.response_text
+            if args.format:
+                response = json.dumps(json.loads(kodi.response_text), indent=2)
+            print(response)
 
 if __name__ == "__main__":
     main()

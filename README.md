@@ -1,12 +1,34 @@
 # kodi-cli
-Command Line Interface for Kodi
+## Command Line Interface for Kodi
 
-I wanted a CLI for Kodi to be used for automation...  I found a few out there, but none that did what I was looking for exactly...
+This tool can be used from the command line to execute commands against a target Kodi host via the RPC interface defined at  https://kodi.wiki/view/JSON-RPC_API/v12.  
 
-I didn't want to have to hard-code every command, so I use a json definition file (kodi_namespaces.json) that reflects the commands found at https://kodi.wiki/view/JSON-RPC_API/v12.
+The available commands are defined via a json file (**kodi_namespaces.json**) which describes all the namespaces, methods and parameters available for managing the kodi device remotely.  
 
-Not all the commands are filled in, as I get time I will translate additional ones into the json definition.
+Note - Not all the commands are fully defined, further iterations of the code will include updates to this file to make more commands available.
 
+## Some terms:
+
+| Term | Description |
+| ------------- | ---------------------------- |
+| namespace | The data model is split into namespace components which can be called via the API |
+| methods | Each namespace has a number of methods which perform some function within that namespace |
+
+
+The output of the tool is the json response from the Kodi endpoint the command was targeted to. 
+(<em>Tip: use the -f parameter to format the json output</em>)
+
+## Prerequsites:
+
+Python packages -
+<ul>
+<li>requests package</li>
+</ul>
+
+
+---
+
+## Usage
 
 ```
 usage: kodi_cli.py [-h] -H HOST [-P PORT] [-u USER] [-p PASSWORD] [-v] [command [command ...]]
@@ -21,34 +43,52 @@ optional arguments:
   -u USER, --user USER  Kodi authenticaetion username
   -p PASSWORD, --password PASSWORD
                         Kodi autentication password
-  -v, --verbose         Turn out verbose output, more parms increase verbosity
+  -f, --format          Format json output                        
+  -v, --verbose         Turn out verbose output, more parms increase 
   ```
 
-To list all namespaces:
+---
+
+## Examples
+
+You can get help from the command line to view namespaces, namespace commands and calling requirements.  Simply
+type help as the command to get a list of all the namespaces.
+
+
+### List all namespaces
+
+Namespaces are modules in Kodi, each namespace manages differ aspects of the Kodi interface
+
 ```
 SYNTAX:
   python kodi_cli.py -H KODIHOST -u user -p pwd help
 
 OUTPUT:
-  Kodi namespaces:
-  ---------------------------
-  AddOns
-  Application
-  AudioLibrary
-  Favorites
-  GUI
-  Input
-  JSONRPC
-  PVR
-  Player
-  Playlist
-  Profiles
-  Settings
-  System
-  VideoLibrary
+
+  Kodi namespaces -
+    Namespace       Methods
+    --------------- ----------------------------------------------------------------------------
+    AddOns          ExecuteAddon, GetAddonDetails, GetAddons, SetAddonEnabled
+
+    Application     GetProperties, Quit, SetMute, SetVolume
+
+    AudioLibrary    Clean, GetAlbumDetails, GetAlbums, GetArtistDetails,
+                    GetArtists, Scan
+
+    Favorites       AddFavorite, GetFavorites
+
+    GUI             ActivateWindow, ShowNotification
+
+    Input           Back, ButtonEvent, ContextMenu, Down, ExecuteAction,
+                    Home, Info, Left, Right, Select, SendText,
+                    ShowCodec, ShowOSD, ShowPlayProcessInfo, Up
+    ...
 ```
 
-To list all commands for the Application namespace:
+### List all commands for the <em>Application</em> namespace
+
+Each namespace has specific commands.  
+
 ```
 SYNTAX:
   python kodi_cli.py -H KODIHOST -u user -p pwd help Application
@@ -56,6 +96,7 @@ SYNTAX:
   python kodi_cli.py -H KODIHOST -u user -p pwd Application
 
 OUTPUT:
+
   Application namespace commands:
 
   Method                    Description
@@ -66,12 +107,16 @@ OUTPUT:
   Application.SetVolume     Set the current volume
 ```
 
-To list the syntax for a particular namespace command:
+### List the syntax for a particular namespace command
+
+List the sytax for the Application.SetMute command
+
 ```
 SYNTAX:
   python kodi_cli.py -H KODIHOST -u user -p pwd help Application SetMute
 
 OUTPUT:
+
   Syntax: Application.SetMute
   ------------------------------------------------------
   {
@@ -92,13 +137,24 @@ OUTPUT:
   }
 ```
 
-To toggle the mute on
-```
-SYNTAX:
-  python kodi_cli.py -H KODIHOST -u user -p pwd Application SetMute mute=True
+### Example executing a command
+
+To toggle the mute on, then off
 
 ```
+SYNTAX:
+  python kodi_cli.py -H KODIHOST -u user -p pwd Application SetMute mute=toggle
+
+OUTPUT:
+  python kodi_cli.py -H LibreElec7 Application SetMute mute=toggle
+  {"id":1,"jsonrpc":"2.0","result":true}
+
+  python kodi_cli.py -H LibreElec7 Application SetMute mute=toggle
+  {"id":1,"jsonrpc":"2.0","result":false}
+```
+
   Still TODO:
   <ul>
   <li>Create a secrets file so credentials don't have to be suppliled on the cmdline.</li>
+  <li>Build out kodi_namespaces.json with additional definitions.</li>
   </ul>
