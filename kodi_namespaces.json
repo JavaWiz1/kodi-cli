@@ -1,0 +1,150 @@
+{
+    "AddOns": {
+        "ExecuteAddon": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetAddonDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetAddons": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetAddonEnabled": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Application": {
+        "GetProperties": "{\"description\": \"Retrieves the values of the given properties\",\"params\": [{\"items\": {\"$ref\": \"Application.Property.Name\"},\"name\": \"properties\",\"required\": true,\"type\": \"array\",\"uniqueItems\": true}],\"permission\": \"ReadData\",\"returns\": {\"$ref\": \"Application.Property.Value\"},\"type\": \"method\"}",
+        "Quit": "{\"description\": \"Quit application\",\"params\": [],\"permission\": \"ControlPower\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "SetMute": "{\"description\": \"Toggle mute/unmute\",\"params\": [{\"$ref\": \"Global.Toggle\",\"name\": \"mute\",\"required\": true}],\"permission\": \"ControlPlayback\",\"returns\": {\"description\": \"Mute state\",\"type\": \"boolean\"},\"type\": \"method\"}",
+        "SetVolume": "{\"description\": \"Set the current volume\",\"params\": [{\"name\": \"volume\",\"required\": true,\"type\": [{\"maximum\": 100,\"minimum\": 0,\"type\": \"integer\"},{\"$ref\": \"Global.IncrementDecrement\"}]}],\"permission\": \"ControlPlayback\",\"returns\": {\"type\": \"integer\"},\"type\": \"method\"}"
+    },
+    "AudioLibrary": {
+        "Clean": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetAlbumDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetAlbums": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetArtistDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetArtists": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Scan": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Favorites": {
+        "AddFavorite": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetFavorites": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "GUI": {
+        "ActivateWindow": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "ShowNotification": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Input": {
+        "Back": "{\"description\": \"Goes back in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "ButtonEvent": "{\"description\": \"Send a button press event\",\"params\": [{\"description\": \"Button name\",\"name\": \"button\",\"required\": true,\"type\": \"string\"},{\"description\": \"Keymap name (KB, XG, R1, or R2)\",\"enums\": [\"KB\",\"XG\",\"R1\",\"R2\"],\"name\": \"keymap\",\"required\": true,\"type\": \"string\"},{\"default\": 0,\"description\": \"Number of milliseconds to simulate button hold.\",\"minimum\": 0,\"name\": \"holdtime\",\"type\": \"integer\"}],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "ContextMenu": "{\"description\": \"Shows the context menu\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "Down": "{\"description\": \"Navigate Down in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "ExecuteAction": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Home": "{\"description\": \"Goes to Home window in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "Info": "{\"description\": \"Shows the Information dialog\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "Left": "{\"description\": \"Navigate Left in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "Right": "{\"description\": \"Navigate Right in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "Select": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SendText": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "ShowCodec": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "ShowOSD": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "ShowPlayProcessInfo": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Up": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "JSONRPC": {
+        "GetConfiguration": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Introspace": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "NotifyAll": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Permission": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Ping": "{\"description\": \"Ping responder\",\"params\": [],\"permission\": \"ReadData\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
+        "SetConfiguration": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Version": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "PVR": {
+        "AddTimer": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "DeleteTimer": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetBroadcastDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetBrodcastIsPlayable": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetBroadcasts": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetChannelDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetChannelGroupDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetChannelGroups": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetChannels": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetClients": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetProperties": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetRecordingDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetRecordings": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetTimeDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetTimers": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Record": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Scan": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "ToggleTimer": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Player": {
+        "AddSubtitle": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetActivePlayers": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetItem": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetPlayers": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetProperties": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetViewMod": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GoTo": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Move": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Open": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "PlayPause": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Rotate": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Seek": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetAudioStream": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetPartyMode": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetRepeat": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetShuffle": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetSpeed": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetSubtitle": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetVideoStream": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetViewMode": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Stop": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Zoom": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Playlist": {
+        "Add": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Clear": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetItems": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetPlaylists": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetProperties": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Insert": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Remove": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Swap": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Profiles": {
+        "GetCurrentProfile": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetProfiles": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "LoadProfile": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "Settings": {
+        "GetCategories": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetSections": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetSettingValue": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetSettings": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "ResetSettingValue": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "SetSettingValue": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "System": {
+        "EjectOpticalDrive": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetProperties": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Hibernate": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Reboot": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Shutdown": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Suspend": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    },
+    "VideoLibrary": {
+        "Clean": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Export": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetEpisodeDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetEpisodes": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetInProgressTVShows": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetMovieDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetMovieSetDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetMovieSets": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetMovies": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetRecentlyAddedEpisodes": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetRecentlyAddedMovies": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetTVShowDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "GetTVShows": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "RefreshEpisode": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "RefreshMovie": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "RefreshTVShow": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Scan": "{\"description\": \"NOT IMPLEMENTED.\"}"
+    }
+}
