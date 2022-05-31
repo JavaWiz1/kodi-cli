@@ -1,10 +1,12 @@
-import json
 import argparse
-import requests
+import json
 import logging
+import os
+import inspect
+import requests
+import pathlib
 
-LOGGER = logging.getLevelName(__name__)
-# TODO: Create secrets file that is read on starup if exists
+LOGGER = logging.getLogger(__name__)
 
 class KodiObj():
     def __init__(self, host: str, port: int, user: str, password: str):
@@ -17,35 +19,35 @@ class KodiObj():
         self._LOGGER = logging.getLogger(__name__)
         self._LOGGER.info("KodiObj created")
 
-    def _load_kodi_namespaces(self) -> dict:
-        with open("./kodi_namespaces.json","r") as json_fh:
-            json_data = json.load(json_fh)
-        return json_data
 
     def get_namespace_list(self) -> list:
+        """Returns a list of the Kodi namespace objeccts"""
         return self._namespaces.keys()
     
-    def get_namespace_command_list(self, namespace: str) -> list:
+    def get_namespace_method_list(self, namespace: str) -> list:
+        """Returns a list of the methods for the requested namespace"""
         commands = []
         ns = self._namespaces.get(namespace, None)
         if ns:
             commands = ns.keys()
         return commands
     
-    def check_command(self, namespace: str, command: str) -> bool:
+    def check_command(self, namespace: str, method: str) -> bool:
+        """Validate namespace method combination, true if valid, false if not"""
         if namespace not in self._namespaces.keys():
             self._LOGGER.error(f'Invalid namespace: {namespace}')
             return False
-        if command not in self._namespaces[namespace].keys():
-            self._LOGGER.error(f'{command} is not valid for {namespace}')
+        if method not in self._namespaces[namespace].keys():
+            self._LOGGER.error(f'{method} is not valid for {namespace}')
             return False
-        param_template = json.loads(self._namespaces[namespace][command])
+        param_template = json.loads(self._namespaces[namespace][method])
         if param_template['description'] == "NOT IMPLEMENTED.":
-            self._LOGGER.error(f'{namespace}.{command} has not been implemented')
+            self._LOGGER.error(f'{namespace}.{method} has not been implemented')
             return False
         return True
 
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
+        """Send Namesmpace.Method command to target host"""
         method = f'{namespace}.{command}'
         self._LOGGER.info(f'load param template for: {method}')
         param_template = json.loads(self._namespaces[namespace][command])
@@ -62,6 +64,44 @@ class KodiObj():
             self._LOGGER.info(f'  Key    : {parm_name:15}  Value: {parm_value}')
             req_parms[parm_name] = parm_value
         return self._call_kodi(method, req_parms)
+
+    def help(self, tokens: list = None):
+        namesp = None
+        method = None
+        if tokens:
+            if isinstance(tokens, str):
+                namesp = tokens
+            else:
+                namesp = tokens[0]
+                if len(tokens) > 1:
+                    method = tokens[1]
+
+        if not namesp or (namesp == "help" and method == "namespaces"):
+            self._help_namespaces()
+            return
+
+        if namesp not in self._namespaces.keys():
+            print(f'Unknown namespace [{namesp}]. Try help namespaces')
+            return
+
+        if not method:
+            self._help_namespace(namesp)
+            return
+        
+        if method not in self.get_namespace_method_list(namesp):
+            print(f'Unknown command [{method}] in namespace {namesp}')
+            return
+
+        self._help_namespace_method(namesp, method)
+
+    # === Private Class Fuctions ==============================================================
+    def _load_kodi_namespaces(self) -> dict:
+        """Load kodi namespace definition from configuration json file"""
+        this_path = os.path.dirname(os.path.abspath(__file__))
+        json_file = f'{this_path}{os.sep}kodi_namespaces.json'
+        with open(json_file,"r") as json_fh:
+            json_data = json.load(json_fh)
+        return json_data
 
     def _clear_response(self):
         self.response_text = None
@@ -110,15 +150,15 @@ class KodiObj():
         return success
 
     def _help_namespaces(self):
-        print("Kodi namespaces -\n")
+        print("\nKodi namespaces -")
         print("   Namespace       Methods")
-        print("   --------------- ----------------------------------------------------------------------------")
+        print(f"  --------------- ---------------------------------------------------------------------------")
         for ns in self.get_namespace_list():
             methods = ""
-            for method in self.get_namespace_command_list(ns):
+            for method in self.get_namespace_method_list(ns):
                 if len(methods) == 0:
                     methods = method
-                elif len(methods) > 40:
+                elif len(methods) + len(method) > 70:
                     print(f'   {ns:15} {methods},')
                     ns = ""
                     methods = method
@@ -127,9 +167,9 @@ class KodiObj():
             print(f'   {ns:15} {methods}\n')
 
     def _help_namespace(self, ns: str):
-        ns_commands = self.get_namespace_command_list(ns)
+        ns_commands = self.get_namespace_method_list(ns)
 
-        print(f'{ns} namespace commands-\n')
+        print(f'\n{ns} Namespace Methods -')
         print('  Method                    Description')
         print('  ------------------------- --------------------------------------------')
         for token in ns_commands:
@@ -140,41 +180,15 @@ class KodiObj():
 
     def _help_namespace_method(self, ns: str, method: str):
         help_text = json.loads(self._namespaces[ns][method])
-        print(f'Syntax: {ns}.{method}')
+        print(f'\nSyntax: {ns}.{method}')
         print('------------------------------------------------------')
         print(f'{json.dumps(help_text,indent=2)}')
 
-    def help(self, tokens: list = None):
-        namesp = None
-        method = None
 
-        if tokens:
-            if isinstance(tokens, str):
-                namesp = tokens
-            else:
-                namesp = tokens[0]
-                if len(tokens) > 1:
-                    method = tokens[1]
-
-        if not namesp or (namesp == "help" and method == "namespaces"):
-            self._help_namespaces()
-            return
-
-        if namesp not in self._namespaces.keys():
-            print(f'Unknown namespace [{namesp}]. Try help namespaces')
-            return
-
-        if not method:
-            self._help_namespace(namesp)
-            return
-        
-        if method not in self.get_namespace_command_list(namesp):
-            print(f'Unknown command [{method}] in namespace {namesp}')
-            return
-
-        self._help_namespace_method(namesp, method)
-
+# =======================================================================================================================
+# === Module Functions ==================================================================================================
 def is_integer(token: str) -> bool:
+    """Return true if string is an integer"""
     is_int = True
     try:
         int(token)
@@ -183,25 +197,27 @@ def is_integer(token: str) -> bool:
     return is_int
 
 def is_boolean(token: str) -> bool:
+    """Return true if string is a boolean"""
     is_bool = False
     if token in ["True", "true", "False", "false"]:
         is_bool = True
-    # try:
-    #     bool(token)
-    # except ValueError:
-    #     is_bool = False
     return is_bool
+
 def is_list(token: str) -> bool:
+    """Return true if string represents a list"""
     is_list = False
     if token.startswith("[") and token.endswith("]"):
         is_list = True
     return is_list
 
 def make_list_from_string(token: str) -> list:
+    """Translate list formatted string to a list"""
     text = token[1:-1]
     return text.split(",")
 
+
 def parse_input(args: list) -> (str, str, dict):
+    """Parse program CLI command parameters, return Namespace, Method, Parms as a tuple"""
     cmd = None
     sub_cmd = None
     parm_kwargs = {}
@@ -226,22 +242,121 @@ def parse_input(args: list) -> (str, str, dict):
 
     return cmd, sub_cmd, parm_kwargs
 
+
+def create_config(args) -> bool:
+    """Create config dictionary based on config file and command-line parameters"""
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    cfg_file = f'{this_path}{os.sep}kodi_cli.cfg'
+    if pathlib.Path(cfg_file).exists():
+        print('ERROR- request to create config file, but it already exists.  Rename or delete.')
+        print(f'       {cfg_file}')
+        return False
+
+    cfg_dict = get_configfile_defaults(args)
+    # Remove keys we don't want in the config
+    for key in ['config', 'create_config', 'command']:
+        try:
+            cfg_dict.pop(key)
+        except KeyError:
+            pass
+    # Remove keys that don't have a value
+    cfg_dict = {key:val for key, val in cfg_dict.items() if val is not None}
+
+    # Convert to json format and save
+    cfg_json = json.dumps(cfg_dict, indent=2)
+    with open(cfg_file,"w")as cfg_fh:
+        cfg_fh.write(cfg_json)
+
+    print(f'{cfg_file} created.')
+    return True
+
+def get_configfile_defaults(cmdline_args) -> dict:
+    """Get configfile defaults"""
+    # if cfg file exists, us it, otherwise hard-coded defaults
+    this_path = os.path.dirname(os.path.abspath(__file__))
+    cfg_file = f'{this_path}{os.sep}kodi_cli.cfg'
+    try:
+        # Use the config file
+        with open(cfg_file, "r") as cfg_fh:
+            cfg_dict = json.load(cfg_fh)
+    except FileNotFoundError:
+        # Use hard-coded defaults
+        cfg_dict = {
+                        "host": "localhost", 
+                        "port": 8080,
+                        "user": "kodiuser",
+                        "password": "kodipassword",
+                        "format_output": False 
+                   }
+    #  Over-ride with command-line parms
+    if cmdline_args:
+        for entry in cmdline_args._get_kwargs():
+            if entry[1]:
+                cfg_dict[entry[0]] = entry[1]
+
+    return cfg_dict
+
+def display_script_help(usage: str):
+    """Display script help dialog to explain how program works"""
+    print()
+    print(usage)
+    print('Commands are based on Kodi namespaces and methods for each namespace.  When executing a command')
+    print('you supply the namespace, the method and any parameters (if required).\n')
+    print('For example, to display the mute and volume level settings on host kodi001, type:\n')
+    print('  python kodi_cli.py -H kodi001 Application GetProperties properties=[muted,volume]\n')
+    print('TIPS - When calling the script:')
+    print(' - add -h to display script syntax and list of option parameters')
+    print(' - enter HELP as the command for a list of available commands (namespaces)')
+    print(' - add -C to create a config file for paraneter defaults.\n')
+    print('To create a configfile:')
+    print('  - Compose the command line with all the values desired as defaults')
+    print('  - Append a -C to the end of the commandline, the file will be created (if it does not already exist)')
+    print('  - Any future runs will use the defaults, which can be overridden if needed.\n')
+    print('Help commands:')
+    print('  - list of namespaces:    python kodi_cli.py Help')
+    print('  - Methods for Namespace: python kodi_cli.py Help Application')
+    print('  - Parameters for Method: python kodi_cli.py Help Application GetProperties\n')
+    print('Details for namespaces, methods and parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12')
+
 def setup_logging(log_level):
     lg_format='[%(levelname)-5s] %(message)s'
     logging.basicConfig(format=lg_format, level=log_level,)
 
+def dump_args(args):
+    LOGGER.info('Runtime Settings:')
+    LOGGER.info('  Key             Value')
+    LOGGER.info('  --------------- -----------------------------------------------')
+    if isinstance(args, dict):
+        for k,v in args.items():
+            LOGGER.info(f'  {k:15} {v}')
+    else:    
+        for entry in args._get_kwargs():
+            LOGGER.info(f'  {entry[0]:15} {entry[1]}')
+
 def main():
-    # -H --host
-    # -P --port
+    default = get_configfile_defaults(None)
     parser = argparse.ArgumentParser()
-    parser.add_argument("-H","--host", type=str, help="Kodi hostname", required=True)
-    parser.add_argument("-P","--port", type=int, default=8080, help="Kodi RPC listen port")
-    parser.add_argument("-u","--user", type=str, default='kodi', help="Kodi authenticaetion username")
-    parser.add_argument("-p","--password", type=str, default='kodi', help="Kodi autentication password")
-    parser.add_argument("-f","--format", action="store_true", help="Format json output")
+    parser.add_argument("-H","--host", type=str, default=default['host'], help="Kodi hostname")
+    parser.add_argument("-P","--port", type=int, default=default['port'],help="Kodi RPC listen port")
+    parser.add_argument("-u","--user", type=str, default=default['user'],help="Kodi authenticaetion username")
+    parser.add_argument("-p","--password", type=str, default=default['password'],help="Kodi autentication password")
+    parser.add_argument('-c',"--config", type=str, help="Optional config file")
+    parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
+    parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
     parser.add_argument("-v","--verbose", action='count', help="Turn out verbose output, more parms increase verbosity")
     parser.add_argument("command", type=str, nargs='*', help="RPC command  cmd.sub-cmd (help namespace to list)")
     args = parser.parse_args()
+  
+    if args.create_config:
+        create_config(args)
+        return
+
+    if not args.command:
+        display_script_help(parser.format_usage())
+        return  
+
+    # Create args/settings dict from cmdline and config file
+    args_dict = get_configfile_defaults(args)
     
     loglvl = logging.ERROR
     if args.verbose:
@@ -251,21 +366,21 @@ def main():
             loglvl=logging.DEBUG
     
     setup_logging(loglvl)
-    LOGGER = logging.getLogger(__name__)
+    if loglvl < logging.ERROR:
+        dump_args(args_dict)
 
-    kodi = KodiObj(args.host, args.port, args.user, args.password)
-    if not args.command:
-        kodi.help()
-    elif args.command[0].lower() == "help":
+    kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
+    if args.command[0].lower() == "help":
         kodi.help(args.command[1:])
     else:        
         cmd, sub_cmd, params = parse_input(args.command)
         if not sub_cmd:
+            # Show help for namespace
             kodi.help(cmd)
         elif kodi.check_command(cmd, sub_cmd):
             kodi.send_request(cmd, sub_cmd, params)
             response = kodi.response_text
-            if args.format:
+            if args.format_output:
                 response = json.dumps(json.loads(kodi.response_text), indent=2)
             print(response)
 

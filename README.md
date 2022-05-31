@@ -13,6 +13,37 @@ Note - Not all the commands are fully defined, further iterations of the code wi
 | ------------- | ---------------------------- |
 | namespace | The data model is split into namespace components which can be called via the API |
 | methods | Each namespace has a number of methods which perform some function within that namespace |
+| command | A command is a namespace method combiniation used to control Kodi function |
+
+```
+usage: kodi_cli.py [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-c CONFIG] [-C] [-f] [-v] [command [command ...]]
+```
+
+### Overall Description
+
+Commands are based on Kodi namespaces and methods for each namespace.  When executing a command
+you supply the namespace, the method and any parameters (if required).
+
+For example, to display the mute and volume level settings on host kodi001, type:
+
+  python kodi_cli.py -H kodi001 Application GetProperties properties=[muted,volume]
+
+TIPS - When calling the script:
+ - add -h to display script syntax and list of option parameters
+ - enter HELP as the command for a list of available commands (namespaces)
+ - add -C to create a config file for paraneter defaults.
+
+To create a configfile:
+  - Compose the command line with all the values desired as defaults
+  - Append a -C to the end of the commandline, the file will be created (if it does not already exist)
+  - Any future runs will use the defaults, which can be overridden if needed.
+
+Help commands:
+  - list of namespaces:    python kodi_cli.py Help
+  - Methods for Namespace: python kodi_cli.py Help Application
+  - Parameters for Method: python kodi_cli.py Help Application GetProperties
+
+Details for namespaces, methods and parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12
 
 
 The output of the tool is the json response from the Kodi endpoint the command was targeted to. 
@@ -30,11 +61,14 @@ Python packages -
 
 ## Usage
 
+Simply running ***python kodi_cli.py*** will display intro help information.
+See below for examples of Kodi commands (i.e. Namespace.Method)
+
 ```
 usage: kodi_cli.py [-h] -H HOST [-P PORT] [-u USER] [-p PASSWORD] [-v] [command [command ...]]
 
 positional arguments:
-  command               RPC command cmd.sub-cmd (help namespace to list)
+  command               RPC command in format: Namespace Method [[Param][Param]]  (help namespace to list)
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -43,19 +77,22 @@ optional arguments:
   -u USER, --user USER  Kodi authenticaetion username
   -p PASSWORD, --password PASSWORD
                         Kodi autentication password
-  -f, --format          Format json output                        
-  -v, --verbose         Turn out verbose output, more parms increase 
+  -c CONFIG, --config CONFIG
+                        Optional config file
+  -C, --create_config   Create empty config
+  -f, --format_output   Format json output
+  -v, --verbose         Turn out verbose output, more parms increase verbosity
   ```
 
 ---
 
 ## Examples
 
-You can get help from the command line to view namespaces, namespace commands and calling requirements.  Simply
-type help as the command to get a list of all the namespaces.
+You can get help from the command line to view namespaces, namespace methods and calling requirements.  Simply
+type ***python kodi_cli.py help*** as the command to get a list of all the namespaces.
 
 
-### List all namespaces
+### List all **namespaces**
 
 Namespaces are modules in Kodi, each namespace manages differ aspects of the Kodi interface
 
@@ -85,9 +122,9 @@ OUTPUT:
     ...
 ```
 
-### List all commands for the <em>Application</em> namespace
+### List all ***Application*** namespace ***methods***
 
-Each namespace has specific commands.  
+Each namespace has a number of methods that can be called.  
 
 ```
 SYNTAX:
@@ -107,7 +144,7 @@ OUTPUT:
   Application.SetVolume     Set the current volume
 ```
 
-### List the syntax for a particular namespace command
+### List the ***method calling signature*** for a particular namespace method
 
 List the sytax for the Application.SetMute command
 
@@ -135,6 +172,7 @@ OUTPUT:
     },
     "type": "method"
   }
+
 ```
 
 ### Example executing a command
@@ -155,6 +193,5 @@ OUTPUT:
 
   Still TODO:
   <ul>
-  <li>Create a secrets file so credentials don't have to be suppliled on the cmdline.</li>
   <li>Build out kodi_namespaces.json with additional definitions.</li>
   </ul>
