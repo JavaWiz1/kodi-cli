@@ -91,6 +91,26 @@ optional arguments:
 You can get help from the command line to view namespaces, namespace methods and calling requirements.  Simply
 type ***python kodi_cli.py help*** as the command to get a list of all the namespaces.
 
+### Create a config file to store defaults
+To minimize command-line entry, you can store defaults in a config file which will be used when running.  The
+values can be over-ridded at run-time by provideing the optional argument
+
+To create a default config file, type your standard defaults as if you were going to execute the CLI and add -C at the end.
+The config file will be written with the values.
+```
+SYNTAX:
+  python kodi_cli.py -u myId -p myPassword -P 8080 -C
+
+OUTPUT:
+  a file (kodi_cli.cfg will be written as:
+    {
+      "host": "localhost",
+      "port": 8080,
+      "user": "myId",
+      "password": "myPassword",
+      "format_output": false
+    }
+```
 
 ### List all **namespaces**
 
@@ -98,7 +118,7 @@ Namespaces are modules in Kodi, each namespace manages differ aspects of the Kod
 
 ```
 SYNTAX:
-  python kodi_cli.py -H KODIHOST -u user -p pwd help
+  python kodi_cli.py help
 
 OUTPUT:
 
@@ -128,9 +148,9 @@ Each namespace has a number of methods that can be called.
 
 ```
 SYNTAX:
-  python kodi_cli.py -H KODIHOST -u user -p pwd help Application
+  python kodi_cli.py help Application
   or
-  python kodi_cli.py -H KODIHOST -u user -p pwd Application
+  python kodi_cli.py Application
 
 OUTPUT:
 
@@ -150,7 +170,7 @@ List the sytax for the Application.SetMute command
 
 ```
 SYNTAX:
-  python kodi_cli.py -H KODIHOST -u user -p pwd help Application SetMute
+  python kodi_cli.py help Application SetMute
 
 OUTPUT:
 
@@ -181,13 +201,13 @@ To toggle the mute on, then off
 
 ```
 SYNTAX:
-  python kodi_cli.py -H KODIHOST -u user -p pwd Application SetMute mute=toggle
+  python kodi_cli.py Application SetMute mute=toggle
 
 OUTPUT:
-  python kodi_cli.py -H LibreElec7 Application SetMute mute=toggle
+  python kodi_cli.py -H MyKodiServer Application SetMute mute=toggle
   {"id":1,"jsonrpc":"2.0","result":true}
 
-  python kodi_cli.py -H LibreElec7 Application SetMute mute=toggle
+  python kodi_cli.py -H MyKodiServer Application SetMute mute=toggle
   {"id":1,"jsonrpc":"2.0","result":false}
 ```
 

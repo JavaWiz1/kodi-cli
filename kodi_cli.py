@@ -34,6 +34,7 @@ class KodiObj():
     
     def check_command(self, namespace: str, method: str) -> bool:
         """Validate namespace method combination, true if valid, false if not"""
+        self._LOGGER.info(f'Check command : {namespace} {method}')
         if namespace not in self._namespaces.keys():
             self._LOGGER.error(f'Invalid namespace: {namespace}')
             return False
@@ -49,13 +50,13 @@ class KodiObj():
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
         """Send Namesmpace.Method command to target host"""
         method = f'{namespace}.{command}'
-        self._LOGGER.info(f'load param template for: {method}')
+        self._LOGGER.info(f'Load template : {method}')
         param_template = json.loads(self._namespaces[namespace][command])
         parm_list = param_template['params']
         self._LOGGER.debug(f'  template:  {param_template}')
         self._LOGGER.debug(f'  parm_list: {parm_list}')
         req_parms = {}
-        self._LOGGER.info('build parameter dictionary')
+        self._LOGGER.info('Parameter dictionary:')
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
             parm_value = input_params.get(parm_name,None)
@@ -63,6 +64,7 @@ class KodiObj():
                 parm_value = parm_entry.get('default', None)
             self._LOGGER.info(f'  Key    : {parm_name:15}  Value: {parm_value}')
             req_parms[parm_name] = parm_value
+        self._LOGGER.info('')
         return self._call_kodi(method, req_parms)
 
     def help(self, tokens: list = None):
@@ -118,7 +120,8 @@ class KodiObj():
         MAX_RETRY = 2
         payload = {"jsonrpc": "2.0", "id": 1, "method": f"{method}", "params": params }
         headers = {"Content-type": "application/json"}
-        self._LOGGER.debug(f"URL: {self._base_url}")
+        self._LOGGER.info(f'Prep call to {self._host}')
+        self._LOGGER.debug(f"  URL    : {self._base_url}")
         self._LOGGER.info(f"  Method : {method}")
         self._LOGGER.info(f"  Payload: {payload}")
 
@@ -126,13 +129,13 @@ class KodiObj():
         success = False  # default for 1st loop cycle
         while not success and retry < MAX_RETRY:
             try:
-                self._LOGGER.info(f'Making call to {self._base_url} for {method}')
+                self._LOGGER.info(f'  Making call to {self._base_url} for {method}')
                 resp = requests.post(self._base_url,
                                     auth=(self._userid, self._password),
                                     data=json.dumps(payload),
                                     headers=headers, timeout=(5,3)) # connect, read
                 success = True
-                self._LOGGER.info(f"{self._host}: {resp.status_code} - {resp.text}")
+                #self._LOGGER.info(f"{self._host}: {resp.status_code} - {resp.text}")
             except requests.RequestException as re:
                 retry = MAX_RETRY + 1
                 self._set_response(-2, f'{{"result": "{re.__class__.__name__}"}}')

@@ -1,31 +1,31 @@
 {
     "AddOns": {
-        "ExecuteAddon": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "GetAddonDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "GetAddons": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "SetAddonEnabled": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "ExecuteAddon": "{\"description\": \"Executes the given addon with the given parameters (if possible)\", \"params\": [{\"name\": \"addonid\", \"required\": true, \"type\": \"string\"}, {\"default\": \"\", \"name\": \"params\", \"type\": [{\"additionalProperties\": {\"default\": \"\", \"type\": \"string\"}, \"type\": \"object\"}, {\"items\": {\"type\": \"string\"}, \"type\": \"array\"}, {\"description\": \"URL path (must start with / or ?\", \"type\": \"string\"}]}, {\"default\": false, \"name\": \"wait\", \"type\": \"boolean\"}], \"permission\": \"ExecuteAddon\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "GetAddonDetails": "{\"description\": \"Gets the details of a specific addon\", \"params\": [{\"name\": \"addonid\", \"required\": true, \"type\": \"string\"}, {\"$ref\": \"Addon.Fields\", \"name\": \"properties\"}], \"permission\": \"ReadData\", \"returns\": {\"properties\": {\"addon\": {\"$ref\": \"Addon.Details\", \"required\": true}, \"limits\": {\"$ref\": \"List.LimitsReturned\", \"required\": true}}, \"type\": \"object\"}, \"type\": \"method\"}",
+        "GetAddons": "{\"description\": \"Gets all available addons\", \"params\": [{\"$ref\": \"Addon.Types\", \"default\": \"unknown\", \"name\": \"type\"}, {\"$ref\": \"Addon.Content\", \"default\": \"unknown\", \"description\": \"Content provided by the addon. Only considered for plugins and scripts.\", \"name\": \"content\"}, {\"default\": \"all\", \"name\": \"enabled\", \"type\": [{\"type\": \"boolean\"}, {\"enums\": [\"all\"], \"type\": \"string\"}]}, {\"$ref\": \"Addon.Fields\", \"name\": \"properties\"}, {\"$ref\": \"List.Limits\", \"name\": \"limits\"}, {\"default\": true, \"name\": \"installed\", \"type\": [{\"type\": \"boolean\"}, {\"enums\": [\"all\"], \"type\": \"string\"}]}], \"permission\": \"ReadData\", \"returns\": {\"properties\": {\"addons\": {\"items\": {\"$ref\": \"Addon.Details\"}, \"type\": \"array\"}, \"limits\": {\"$ref\": \"List.LimitsReturned\", \"required\": true}}, \"type\": \"object\"}, \"type\": \"method\"}",
+        "SetAddonEnabled": "{\"description\": \"Enables/Disables a specific addon\", \"params\": [{\"name\": \"addonid\", \"required\": true, \"type\": \"string\"}, {\"$ref\": \"Global.Toggle\", \"name\": \"enabled\", \"required\": true}], \"permission\": \"ManageAddon\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}"
     },
     "Application": {
         "GetProperties": "{\"description\": \"Retrieves the values of the given properties\",\"params\": [{\"items\": {\"$ref\": \"Application.Property.Name\"},\"name\": \"properties\",\"required\": true,\"type\": \"array\",\"uniqueItems\": true}],\"permission\": \"ReadData\",\"returns\": {\"$ref\": \"Application.Property.Value\"},\"type\": \"method\"}",
         "Quit": "{\"description\": \"Quit application\",\"params\": [],\"permission\": \"ControlPower\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
         "SetMute": "{\"description\": \"Toggle mute/unmute\",\"params\": [{\"$ref\": \"Global.Toggle\",\"name\": \"mute\",\"required\": true}],\"permission\": \"ControlPlayback\",\"returns\": {\"description\": \"Mute state\",\"type\": \"boolean\"},\"type\": \"method\"}",
-        "SetVolume": "{\"description\": \"Set the current volume\",\"params\": [{\"name\": \"volume\",\"required\": true,\"type\": [{\"maximum\": 100,\"minimum\": 0,\"type\": \"integer\"},{\"$ref\": \"Global.IncrementDecrement\"}]}],\"permission\": \"ControlPlayback\",\"returns\": {\"type\": \"integer\"},\"type\": \"method\"}"
-    },
+        "SetVolume": "{\"description\": \"Set the current volume\", \"params\": [{\"name\": \"volume\", \"required\": true, \"type\": [{\"maximum\": 100, \"minimum\": 0, \"type\": \"integer\"}, {\"$ref\": \"Global.IncrementDecrement\"}]}], \"permission\": \"ControlPlayback\", \"returns\": {\"type\": \"integer\"}, \"type\": \"method\"}"
+    },              
     "AudioLibrary": {
-        "Clean": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Clean": "{\"description\": \"Cleans the audio library from non-existent items\", \"params\": [{\"default\": true, \"description\": \"Whether or not to show the progress bar or any other GUI dialog\", \"name\": \"showdialogs\", \"type\": \"boolean\"}], \"permission\": \"RemoveData\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
         "GetAlbumDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "GetAlbums": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "GetArtistDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "GetArtists": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Scan": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "Scan": "{\"description\": \"Scans the audio sources for new library items\", \"params\": [{\"default\": \"\", \"name\": \"directory\", \"type\": \"string\"}, {\"default\": true, \"description\": \"Whether or not to show the progress bar or any other GUI dialog\", \"name\": \"showdialogs\", \"type\": \"boolean\"}], \"permission\": \"UpdateData\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}"
     },
     "Favorites": {
         "AddFavorite": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "GetFavorites": "{\"description\": \"NOT IMPLEMENTED.\"}"
     },
     "GUI": {
-        "ActivateWindow": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "ShowNotification": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "ActivateWindow": "{\"description\": \"Activates the given window\", \"params\": [{\"$ref\": \"GUI.Window\", \"name\": \"window\", \"required\": true}, {\"items\": {\"minLength\": 1, \"type\": \"string\"}, \"minItems\": 1, \"name\": \"parameters\", \"type\": \"array\"}], \"permission\": \"ControlGUI\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "ShowNotification": "{\"description\": \"Shows a GUI notification\", \"params\": [{\"name\": \"title\", \"required\": true, \"type\": \"string\"}, {\"name\": \"message\", \"required\": true, \"type\": \"string\"}, {\"default\": \"\", \"name\": \"image\",\"type\": [{\"enums\": [\"info\", \"warning\", \"error\"], \"type\": \"string\"}, {\"type\": \"string\"}]}, {\"default\": 5000, \"description\": \"The time in milliseconds the notification will be visible\", \"minimum\": 1500, \"name\": \"displaytime\", \"type\": \"integer\"}], \"permission\": \"ControlGUI\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}"
     },
     "Input": {
         "Back": "{\"description\": \"Goes back in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}",
@@ -113,24 +113,24 @@
         "LoadProfile": "{\"description\": \"NOT IMPLEMENTED.\"}"
     },
     "Settings": {
-        "GetCategories": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "GetSections": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "GetSettingValue": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "GetSettings": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "ResetSettingValue": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "SetSettingValue": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "GetCategories": "{\"description\": \"Retrieves all setting categories\", \"params\": [{\"$ref\": \"Setting.Level\", \"default\": \"standard\", \"name\": \"level\"}, {\"default\": \"\", \"name\": \"section\", \"type\": \"string\"}, {\"extends\": \"Item.Fields.Base\", \"items\": {\"enums\": [\"settings\"], \"type\": \"string\"}, \"name\": \"properties\"}], \"permission\": \"ReadData\", \"returns\": {\"properties\": {\"categories\": {\"items\": {\"$ref\": \"Setting.Details.Category\"}, \"type\": \"array\"}}, \"type\": \"object\"}, \"type\": \"method\"}",
+        "GetSections": "{\"description\": \"Retrieves all setting sections\", \"params\": [{\"$ref\": \"Setting.Level\", \"default\": \"standard\", \"name\": \"level\"}, {\"extends\": \"Item.Fields.Base\", \"items\": {\"enums\": [\"categories\"], \"type\": \"string\"}, \"name\": \"properties\"}], \"permission\": \"ReadData\", \"returns\": {\"properties\": {\"sections\": {\"items\": {\"$ref\": \"Setting.Details.Section\"}, \"type\": \"array\"}}, \"type\": \"object\"}, \"type\": \"method\"}",
+        "GetSettingValue": "{\"description\": \"Retrieves the value of a setting\", \"params\": [{\"minLength\": 1, \"name\": \"setting\", \"required\": true, \"type\": \"string\"}], \"permission\": \"ReadData\", \"returns\": {\"properties\": {\"value\": {\"$ref\": \"Setting.Value.Extended\", \"required\": true}}, \"type\": \"object\"}, \"type\": \"method\"}",
+        "GetSettings": "{\"description\": \"Retrieves all settings\", \"params\": [{\"$ref\": \"Setting.Level\", \"default\": \"standard\", \"name\": \"level\"}, {\"name\": \"filter\", \"type\": [{\"additionalProperties\": false, \"properties\": {\"category\": {\"minLength\": 1, \"required\": true, \"type\": \"string\"}, \"section\": {\"minLength\": 1, \"required\": true, \"type\": \"string\"}}, \"type\": \"object\"}]}], \"permission\": \"ReadData\", \"returns\": {\"properties\": {\"settings\": {\"items\": {\"$ref\": \"Setting.Details.Setting\"}, \"type\": \"array\"}}, \"type\": \"object\"}, \"type\": \"method\"}",
+        "ResetSettingValue": "{\"description\": \"Resets the value of a setting\", \"params\": [{\"minLength\": 1, \"name\": \"setting\", \"required\": true, \"type\": \"string\"}], \"permission\": \"ReadData\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "SetSettingValue": "{\"description\": \"Changes the value of a setting\", \"params\": [{\"minLength\": 1, \"name\": \"setting\", \"required\": true, \"type\": \"string\"}, {\"$ref\": \"Setting.Value.Extended\", \"name\": \"value\", \"required\": true}], \"permission\": \"ReadData\", \"returns\": {\"type\": \"boolean\"}, \"type\": \"method\"}"
     },
     "System": {
-        "EjectOpticalDrive": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "GetProperties": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Hibernate": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Reboot": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Shutdown": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Suspend": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "EjectOpticalDrive": "{\"description\": \"Ejects or closes the optical disc drive (if available)\", \"params\": [], \"permission\": \"ControlSystem\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "GetProperties": "{\"description\": \"Shuts the system running Kodi down\", \"params\": [], \"permission\": \"ControlPower\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "Hibernate": "{\"description\": \"Puts the system running Kodi into hibernate mode\", \"params\": [], \"permission\": \"ControlPower\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "Reboot": "{\"description\": \"Reboots the system running Kodi\", \"params\": [], \"permission\": \"ControlPower\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "Shutdown": "{\"description\": \"Shuts the system running Kodi down\", \"params\": [], \"permission\": \"ControlPower\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "Suspend": "{\"description\": \"Suspends the system running Kodi\", \"params\": [], \"permission\": \"ControlPower\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}"
     },
     "VideoLibrary": {
-        "Clean": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Export": "{\"description\": \"NOT IMPLEMENTED.\"}",
+        "Clean": "{\"description\": \"Cleans the video library for non-existent items\", \"params\": [{\"default\": true, \"description\": \"Whether or not to show the progress bar or any other GUI dialog\", \"name\": \"showdialogs\", \"type\": \"boolean\"}, {\"default\": \"video\", \"description\": \"Content type to clean for\", \"enums\": [\"video\", \"movies\", \"tvshows\", \"musicvideos\"], \"name\": \"content\", \"type\": \"string\"}, {\"default\": \"\", \"description\": \"Path to the directory to clean up; performs a global cleanup if not specified\", \"name\": \"directory\", \"type\": \"string\"}], \"permission\": \"RemoveData\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
+        "Export": "{\"description\": \"Exports all items from the video library\", \"params\": [{\"name\": \"options\", \"type\": [{\"additionalProperties\": false, \"properties\": {\"path\": {\"description\": \"Path to the directory to where the data should be exported\", \"minLength\": 1, \"required\": true, \"type\": \"string\"}}, \"type\": \"object\"}, {\"additionalProperties\": false, \"properties\": {\"actorthumbs\": {\"default\": false, \"description\": \"Whether to export actor thumbnails\", \"type\": \"boolean\"}, \"images\": {\"default\": false, \"description\": \"Whether to export thumbnails and fanart images\", \"type\": \"boolean\"}, \"overwrite\": {\"default\": false, \"description\": \"Whether to overwrite existing exported files\", \"type\": \"boolean\"}}, \"type\": \"object\"}]}], \"permission\": \"WriteFile\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}",
         "GetEpisodeDetails": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "GetEpisodes": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "GetInProgressTVShows": "{\"description\": \"NOT IMPLEMENTED.\"}",
@@ -145,6 +145,6 @@
         "RefreshEpisode": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "RefreshMovie": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "RefreshTVShow": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Scan": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "Scan": "{\"description\": \"Scans the video sources for new library items\", \"params\": [{\"default\": \"\", \"name\": \"directory\", \"type\": \"string\"}, {\"default\": true, \"description\": \"Whether or not to show the progress bar or any other GUI dialog\", \"name\": \"showdialogs\", \"type\": \"boolean\"}], \"permission\": \"UpdateData\", \"returns\": {\"type\": \"string\"}, \"type\": \"method\"}"
     }
 }
