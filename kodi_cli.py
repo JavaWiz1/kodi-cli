@@ -67,18 +67,24 @@ class KodiObj():
         self._LOGGER.info('')
         return self._call_kodi(method, req_parms)
 
-    def help(self, tokens: list = None):
+    def help(self, input_string: str = None):
         namesp = None
         method = None
-        if tokens:
-            if isinstance(tokens, str):
-                namesp = tokens
-            else:
+        if input_string:
+            if "." in input_string:
+                tokens = input_string.split(".")
                 namesp = tokens[0]
-                if len(tokens) > 1:
-                    method = tokens[1]
+                method = tokens[1]
+            else:
+                namesp = input_string
+            # if isinstance(tokens, str):
+            #     namesp = input_string
+            # else:
+            #     namesp = tokens[0]
+            #     if len(tokens) > 1:
+            #         method = tokens[1]
 
-        if not namesp or (namesp == "help" and method == "namespaces"):
+        if not namesp or (namesp == "help"):
             self._help_namespaces()
             return
 
@@ -224,23 +230,46 @@ def parse_input(args: list) -> (str, str, dict):
     cmd = None
     sub_cmd = None
     parm_kwargs = {}
+    namespace = None
+    method = None
     if len(args) > 0:
-        cmd = args[0]
+        namespace = args[0]
+        if "." in namespace:
+            # namespace.method
+            tokens = namespace.split(".")
+            namespace = tokens[0]
+            method = tokens[1]
         if len(args) > 1:
-            sub_cmd = args[1]
-            if len(args) > 2:
-                parm_kwargs = {}
-                for parm_block in args[2:]:
-                    token = parm_block.split("=")
-                    if len(token) > 1:
-                        if is_list(token[1]):
-                            parm_kwargs[token[0]] = make_list_from_string(token[1])
-                        elif is_integer(token[1]):
-                            parm_kwargs[token[0]] = int(token[1])
-                        elif is_boolean(token[1]):
-                            parm_kwargs[token[0]] = bool(token[1])
-                        else:
-                            parm_kwargs[token[0]] = token[1]
+            for parm_block in args[1:]:
+                # param_key=param_value
+                # param_key=[a,list,of,stuff]
+                tokens = parm_block.split("=")
+                if len(tokens) > 1:
+                    if is_list(token[1]):
+                        parm_kwargs[token[0]] = make_list_from_string(token[1])
+                    elif is_integer(token[1]):
+                        parm_kwargs[token[0]] = int(token[1])
+                    elif is_boolean(token[1]):
+                        parm_kwargs[token[0]] = bool(token[1])
+                    else:
+                        parm_kwargs[token[0]] = token[1]
+    # if len(args) > 0:
+    #     cmd = args[0]
+    #     if len(args) > 1:
+    #         sub_cmd = args[1]
+    #         if len(args) > 2:
+    #             parm_kwargs = {}
+    #             for parm_block in args[2:]:
+    #                 token = parm_block.split("=")
+    #                 if len(token) > 1:
+    #                     if is_list(token[1]):
+    #                         parm_kwargs[token[0]] = make_list_from_string(token[1])
+    #                     elif is_integer(token[1]):
+    #                         parm_kwargs[token[0]] = int(token[1])
+    #                     elif is_boolean(token[1]):
+    #                         parm_kwargs[token[0]] = bool(token[1])
+    #                     else:
+    #                         parm_kwargs[token[0]] = token[1]
 
 
     return cmd, sub_cmd, parm_kwargs
@@ -306,7 +335,7 @@ def display_script_help(usage: str):
     print('Commands are based on Kodi namespaces and methods for each namespace.  When executing a command')
     print('you supply the namespace, the method and any parameters (if required).\n')
     print('For example, to display the mute and volume level settings on host kodi001, type:\n')
-    print('  python kodi_cli.py -H kodi001 Application GetProperties properties=[muted,volume]\n')
+    print('  python kodi_cli.py -H kodi001 Application.GetProperties properties=[muted,volume]\n')
     print('TIPS - When calling the script:')
     print(' - add -h to display script syntax and list of option parameters')
     print(' - enter HELP as the command for a list of available commands (namespaces)')
@@ -318,7 +347,7 @@ def display_script_help(usage: str):
     print('Help commands:')
     print('  - list of namespaces:    python kodi_cli.py Help')
     print('  - Methods for Namespace: python kodi_cli.py Help Application')
-    print('  - Parameters for Method: python kodi_cli.py Help Application GetProperties\n')
+    print('  - Parameters for Method: python kodi_cli.py Help Application.GetProperties\n')
     print('Details for namespaces, methods and parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12')
 
 def setup_logging(log_level):
@@ -347,7 +376,7 @@ def main():
     parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
     parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
     parser.add_argument("-v","--verbose", action='count', help="Turn out verbose output, more parms increase verbosity")
-    parser.add_argument("command", type=str, nargs='*', help="RPC command  cmd.sub-cmd (help namespace to list)")
+    parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
   
     if args.create_config:
@@ -374,14 +403,17 @@ def main():
 
     kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
     if args.command[0].lower() == "help":
-        kodi.help(args.command[1:])
+        if len(args.command) > 1:
+            kodi.help(args.command[1])
+        else:
+            kodi.help()
     else:        
-        cmd, sub_cmd, params = parse_input(args.command)
-        if not sub_cmd:
+        namespace, method, params = parse_input(args.command)
+        if not method:
             # Show help for namespace
-            kodi.help(cmd)
-        elif kodi.check_command(cmd, sub_cmd):
-            kodi.send_request(cmd, sub_cmd, params)
+            kodi.help(namespace)
+        elif kodi.check_command(namespace, method):
+            kodi.send_request(namespace, method, params)
             response = kodi.response_text
             if args.format_output:
                 response = json.dumps(json.loads(kodi.response_text), indent=2)
