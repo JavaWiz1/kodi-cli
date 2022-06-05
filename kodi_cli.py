@@ -10,16 +10,23 @@ LOGGER = logging.getLogger(__name__)
 
 class KodiObj():
     def __init__(self, host: str, port: int, user: str, password: str):
+        self._LOGGER = logging.getLogger(__name__)
+        self._LOGGER.info("KodiObj created")
         self._host = host
         self._port = port
         self._userid = user
         self._password = password
         self._namespaces = self._load_kodi_namespaces()
         self._base_url = f'http://{host}:{port}/jsonrpc'
-        self._LOGGER = logging.getLogger(__name__)
-        self._LOGGER.info("KodiObj created")
-
-
+        self._error_json = {
+                                "error": {
+                                    "code": -1,
+                                    "data": {
+                                    "method": "TBD"
+                                    },
+                                    "message": "Invalid params."
+                                }
+                            }
     def get_namespace_list(self) -> list:
         """Returns a list of the Kodi namespace objeccts"""
         return self._namespaces.keys()
@@ -34,7 +41,6 @@ class KodiObj():
     
     def check_command(self, namespace: str, method: str) -> bool:
         """Validate namespace method combination, true if valid, false if not"""
-        self._LOGGER.info(f'Check command : {namespace} {method}')
         if namespace not in self._namespaces.keys():
             self._LOGGER.error(f'Invalid namespace: {namespace}')
             return False
@@ -45,24 +51,25 @@ class KodiObj():
         if param_template['description'] == "NOT IMPLEMENTED.":
             self._LOGGER.error(f'{namespace}.{method} has not been implemented')
             return False
+        # TODO: Check for required parameters
         return True
 
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
         """Send Namesmpace.Method command to target host"""
         method = f'{namespace}.{command}'
-        self._LOGGER.info(f'Load template : {method}')
+        self._LOGGER.info(f'Load Command Template : {method}')
         param_template = json.loads(self._namespaces[namespace][command])
         parm_list = param_template['params']
         self._LOGGER.debug(f'  template:  {param_template}')
         self._LOGGER.debug(f'  parm_list: {parm_list}')
         req_parms = {}
-        self._LOGGER.info('Parameter dictionary:')
+        self._LOGGER.info('  Parameter dictionary:')
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
             parm_value = input_params.get(parm_name,None)
             if not parm_value:
                 parm_value = parm_entry.get('default', None)
-            self._LOGGER.info(f'  Key    : {parm_name:15}  Value: {parm_value}')
+            self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value}')
             req_parms[parm_name] = parm_value
         self._LOGGER.info('')
         return self._call_kodi(method, req_parms)
@@ -144,11 +151,20 @@ class KodiObj():
                 #self._LOGGER.info(f"{self._host}: {resp.status_code} - {resp.text}")
             except requests.RequestException as re:
                 retry = MAX_RETRY + 1
-                self._set_response(-2, f'{{"result": "{re.__class__.__name__}"}}')
+                self._error_json['error']['code'] = -2
+                self._error_json['error']['data']['method'] = method
+                # self._error_json['error']['message'] = re.__class__.__name__
+                self._error_json['error']['message'] = repr(re)
+                self._set_response(-2, json.dumps(self._error_json))
+                # self._set_response(-2, f'{{"result": "{re.__class__.__name__}"}}')
             except Exception as ce:
                 retry += 1
                 if not hasattr(ce, "message"):
-                    self._set_response(-2, json.dumps({"result": repr(ce)}))
+                    self._error_json['error']['code'] = -3
+                    self._error_json['error']['code']['data']['method'] = method
+                    self._error_json['error']['message'] = repr(ce)
+                    self._set_response(-2, json.dumps(self._error_json))
+                    # self._set_response(-2, json.dumps({"result": repr(ce)}))
                     self._LOGGER.error(f'Exception{retry}: {resp}')
                 time.sleep(2)
 
@@ -245,14 +261,14 @@ def parse_input(args: list) -> (str, str, dict):
                 # param_key=[a,list,of,stuff]
                 tokens = parm_block.split("=")
                 if len(tokens) > 1:
-                    if is_list(token[1]):
-                        parm_kwargs[token[0]] = make_list_from_string(token[1])
-                    elif is_integer(token[1]):
-                        parm_kwargs[token[0]] = int(token[1])
-                    elif is_boolean(token[1]):
-                        parm_kwargs[token[0]] = bool(token[1])
+                    if is_list(tokens[1]):
+                        parm_kwargs[tokens[0]] = make_list_from_string(tokens[1])
+                    elif is_integer(tokens[1]):
+                        parm_kwargs[tokens[0]] = int(tokens[1])
+                    elif is_boolean(tokens[1]):
+                        parm_kwargs[tokens[0]] = bool(tokens[1])
                     else:
-                        parm_kwargs[token[0]] = token[1]
+                        parm_kwargs[tokens[0]] = tokens[1]
     # if len(args) > 0:
     #     cmd = args[0]
     #     if len(args) > 1:
@@ -271,8 +287,11 @@ def parse_input(args: list) -> (str, str, dict):
     #                     else:
     #                         parm_kwargs[token[0]] = token[1]
 
-
-    return cmd, sub_cmd, parm_kwargs
+    LOGGER.info('Parsed Command Input:')
+    LOGGER.info(f'  Namespace : {namespace}')
+    LOGGER.info(f'  Method    : {method}')
+    LOGGER.info(f'  kwargs    : {parm_kwargs}')
+    return namespace, method, parm_kwargs
 
 
 def create_config(args) -> bool:
@@ -311,6 +330,7 @@ def get_configfile_defaults(cmdline_args) -> dict:
         # Use the config file
         with open(cfg_file, "r") as cfg_fh:
             cfg_dict = json.load(cfg_fh)
+        
     except FileNotFoundError:
         # Use hard-coded defaults
         cfg_dict = {
@@ -398,10 +418,11 @@ def main():
             loglvl=logging.DEBUG
     
     setup_logging(loglvl)
+
+    kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
     if loglvl < logging.ERROR:
         dump_args(args_dict)
 
-    kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
     if args.command[0].lower() == "help":
         if len(args.command) > 1:
             kodi.help(args.command[1])

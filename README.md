@@ -224,7 +224,7 @@ To toggle the mute on, then off
 
 ```
 SYNTAX:
-  python kodi_cli.py Application.SetMute mute=toggle
+  python kodi_cli.py -H ServerName Application.SetMute mute=toggle
 
 OUTPUT:
   python kodi_cli.py -H MyKodiServer Application.SetMute mute=toggle
@@ -235,6 +235,25 @@ OUTPUT:
 ```
 </br></br>
 
+### Retrieve Application Properties
+
+To retrieve the muted status and volume level for server kodi001
+```
+SYNTAX:
+  python kodi_cli.py -H kodi001 Application.GetProperties properties=[muted,volume] -f
+
+OUTPUT:
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "muted": false,
+    "volume": 100
+  }
+}
+
+```
+</br></br>
   Still TODO:
   <ul>
   <li>Build out kodi_namespaces.json with additional definitions.</li>
