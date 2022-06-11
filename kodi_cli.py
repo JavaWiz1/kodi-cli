@@ -41,17 +41,24 @@ class KodiObj():
     
     def check_command(self, namespace: str, method: str) -> bool:
         """Validate namespace method combination, true if valid, false if not"""
+        self._LOGGER.info(f'Check Command: {namespace}.{method}')
         if namespace not in self._namespaces.keys():
-            self._LOGGER.error(f'Invalid namespace: {namespace}')
+            self._LOGGER.error(f'Invalid namespace \'{namespace}')
             return False
-        if method not in self._namespaces[namespace].keys():
-            self._LOGGER.error(f'{method} is not valid for {namespace}')
+        if method:
+            if method not in self._namespaces[namespace].keys():
+                self._LOGGER.error(f'\'{method}\' is not valid method\' for namespace \'{namespace}\'')
+                return False
+        else:
+            self._LOGGER.error(f'Must supply Method for namespace \'{namespace}\'')
             return False
+
         param_template = json.loads(self._namespaces[namespace][method])
         if param_template['description'] == "NOT IMPLEMENTED.":
             self._LOGGER.error(f'{namespace}.{method} has not been implemented')
             return False
         # TODO: Check for required parameters
+        self._LOGGER.info(f'  {namespace}.{method} is valid.')
         return True
 
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
@@ -84,27 +91,26 @@ class KodiObj():
                 method = tokens[1]
             else:
                 namesp = input_string
-            # if isinstance(tokens, str):
-            #     namesp = input_string
-            # else:
-            #     namesp = tokens[0]
-            #     if len(tokens) > 1:
-            #         method = tokens[1]
+
+        self._LOGGER.info(f'Help - {input_string}')
+        self._LOGGER.info(f'  Namesapce : {namesp}')
+        self._LOGGER.info(f'  Method    : {method}')
 
         if not namesp or (namesp == "help"):
             self._help_namespaces()
             return
 
         if namesp not in self._namespaces.keys():
-            print(f'Unknown namespace [{namesp}]. Try help namespaces')
+            print(f'Unknown namespace \'{namesp}\'. Try help namespaces')
             return
 
-        if not method:
+        if not method or method == "None":
             self._help_namespace(namesp)
             return
         
         if method not in self.get_namespace_method_list(namesp):
-            print(f'Unknown command [{method}] in namespace {namesp}')
+            self._help_namespace(namesp)
+            # print(f'Unknown command [{method}] in namespace {namesp}')
             return
 
         self._help_namespace_method(namesp, method)
@@ -177,7 +183,7 @@ class KodiObj():
     def _help_namespaces(self):
         print("\nKodi namespaces -")
         print("   Namespace       Methods")
-        print(f"  --------------- ---------------------------------------------------------------------------")
+        print("   --------------- ---------------------------------------------------------------------------")
         for ns in self.get_namespace_list():
             methods = ""
             for method in self.get_namespace_method_list(ns):
@@ -260,7 +266,9 @@ def parse_input(args: list) -> (str, str, dict):
                 # param_key=param_value
                 # param_key=[a,list,of,stuff]
                 tokens = parm_block.split("=")
-                if len(tokens) > 1:
+                if len(tokens) == 1:
+                    parm_kwargs[tokens[0]] = ""
+                else:
                     if is_list(tokens[1]):
                         parm_kwargs[tokens[0]] = make_list_from_string(tokens[1])
                     elif is_integer(tokens[1]):
@@ -269,23 +277,6 @@ def parse_input(args: list) -> (str, str, dict):
                         parm_kwargs[tokens[0]] = bool(tokens[1])
                     else:
                         parm_kwargs[tokens[0]] = tokens[1]
-    # if len(args) > 0:
-    #     cmd = args[0]
-    #     if len(args) > 1:
-    #         sub_cmd = args[1]
-    #         if len(args) > 2:
-    #             parm_kwargs = {}
-    #             for parm_block in args[2:]:
-    #                 token = parm_block.split("=")
-    #                 if len(token) > 1:
-    #                     if is_list(token[1]):
-    #                         parm_kwargs[token[0]] = make_list_from_string(token[1])
-    #                     elif is_integer(token[1]):
-    #                         parm_kwargs[token[0]] = int(token[1])
-    #                     elif is_boolean(token[1]):
-    #                         parm_kwargs[token[0]] = bool(token[1])
-    #                     else:
-    #                         parm_kwargs[token[0]] = token[1]
 
     LOGGER.info('Parsed Command Input:')
     LOGGER.info(f'  Namespace : {namespace}')
@@ -423,22 +414,24 @@ def main():
     if loglvl < logging.ERROR:
         dump_args(args_dict)
 
-    if args.command[0].lower() == "help":
-        if len(args.command) > 1:
-            kodi.help(args.command[1])
-        else:
-            kodi.help()
-    else:        
-        namespace, method, params = parse_input(args.command)
-        if not method:
-            # Show help for namespace
-            kodi.help(namespace)
-        elif kodi.check_command(namespace, method):
-            kodi.send_request(namespace, method, params)
-            response = kodi.response_text
-            if args.format_output:
-                response = json.dumps(json.loads(kodi.response_text), indent=2)
-            print(response)
+    namespace, method, param_dict = parse_input(args.command)
+    
+    if namespace == "help":
+        kodi.help()
+
+    elif 'help' in param_dict.keys():
+        kodi.help(f'{namespace}.{method}')
+
+    elif not kodi.check_command(namespace, method):
+        kodi.help(f'{namespace}.{method}')
+
+    else:
+        kodi.send_request(namespace, method, param_dict)
+        response = kodi.response_text
+        if args.format_output:
+            response = json.dumps(json.loads(kodi.response_text), indent=2)
+        print(response)
+
 
 if __name__ == "__main__":
     main()

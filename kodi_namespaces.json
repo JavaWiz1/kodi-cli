@@ -42,7 +42,7 @@
         "ShowCodec": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "ShowOSD": "{\"description\": \"NOT IMPLEMENTED.\"}",
         "ShowPlayProcessInfo": "{\"description\": \"NOT IMPLEMENTED.\"}",
-        "Up": "{\"description\": \"NOT IMPLEMENTED.\"}"
+        "Up": "{\"description\": \"Navigate Up in GUI\",\"params\": [],\"permission\": \"Navigate\",\"returns\": {\"type\": \"string\"},\"type\": \"method\"}"
     },
     "JSONRPC": {
         "GetConfiguration": "{\"description\": \"NOT IMPLEMENTED.\"}",
