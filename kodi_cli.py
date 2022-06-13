@@ -11,12 +11,14 @@ LOGGER = logging.getLogger(__name__)
 class KodiObj():
     def __init__(self, host: str, port: int, user: str, password: str):
         self._LOGGER = logging.getLogger(__name__)
-        self._LOGGER.info("KodiObj created")
+        self._LOGGER.debug("KodiObj created")
         self._host = host
         self._port = port
         self._userid = user
         self._password = password
-        self._namespaces = self._load_kodi_namespaces()
+        json_dict = self._load_kodi_namespaces()
+        self._namespaces = json_dict['namespaces']
+        self._kodi_references = json_dict['references']
         self._base_url = f'http://{host}:{port}/jsonrpc'
         self._error_json = {
                                 "error": {
@@ -41,7 +43,7 @@ class KodiObj():
     
     def check_command(self, namespace: str, method: str) -> bool:
         """Validate namespace method combination, true if valid, false if not"""
-        self._LOGGER.info(f'Check Command: {namespace}.{method}')
+        self._LOGGER.debug(f'Check Command: {namespace}.{method}')
         if namespace not in self._namespaces.keys():
             self._LOGGER.error(f'Invalid namespace \'{namespace}')
             return False
@@ -58,27 +60,27 @@ class KodiObj():
             self._LOGGER.error(f'{namespace}.{method} has not been implemented')
             return False
         # TODO: Check for required parameters
-        self._LOGGER.info(f'  {namespace}.{method} is valid.')
+        self._LOGGER.debug(f'  {namespace}.{method} is valid.')
         return True
 
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
         """Send Namesmpace.Method command to target host"""
         method = f'{namespace}.{command}'
-        self._LOGGER.info(f'Load Command Template : {method}')
+        self._LOGGER.debug(f'Load Command Template : {method}')
         param_template = json.loads(self._namespaces[namespace][command])
         parm_list = param_template['params']
         self._LOGGER.debug(f'  template:  {param_template}')
         self._LOGGER.debug(f'  parm_list: {parm_list}')
         req_parms = {}
-        self._LOGGER.info('  Parameter dictionary:')
+        self._LOGGER.debug('  Parameter dictionary:')
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
             parm_value = input_params.get(parm_name,None)
             if not parm_value:
                 parm_value = parm_entry.get('default', None)
-            self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value}')
+            self._LOGGER.debug(f'    Key    : {parm_name:15}  Value: {parm_value}')
             req_parms[parm_name] = parm_value
-        self._LOGGER.info('')
+        self._LOGGER.debug('')
         return self._call_kodi(method, req_parms)
 
     def help(self, input_string: str = None):
@@ -92,9 +94,9 @@ class KodiObj():
             else:
                 namesp = input_string
 
-        self._LOGGER.info(f'Help - {input_string}')
-        self._LOGGER.info(f'  Namesapce : {namesp}')
-        self._LOGGER.info(f'  Method    : {method}')
+        self._LOGGER.debug(f'Help - {input_string}')
+        self._LOGGER.debug(f'  Namesapce : {namesp}')
+        self._LOGGER.debug(f'  Method    : {method}')
 
         if not namesp or (namesp == "help"):
             self._help_namespaces()
@@ -139,22 +141,22 @@ class KodiObj():
         MAX_RETRY = 2
         payload = {"jsonrpc": "2.0", "id": 1, "method": f"{method}", "params": params }
         headers = {"Content-type": "application/json"}
-        self._LOGGER.info(f'Prep call to {self._host}')
+        self._LOGGER.debug(f'Prep call to {self._host}')
         self._LOGGER.debug(f"  URL    : {self._base_url}")
-        self._LOGGER.info(f"  Method : {method}")
-        self._LOGGER.info(f"  Payload: {payload}")
+        self._LOGGER.debug(f"  Method : {method}")
+        self._LOGGER.debug(f"  Payload: {payload}")
 
         retry = 0
         success = False  # default for 1st loop cycle
         while not success and retry < MAX_RETRY:
             try:
-                self._LOGGER.info(f'  Making call to {self._base_url} for {method}')
+                self._LOGGER.debug(f'  Making call to {self._base_url} for {method}')
                 resp = requests.post(self._base_url,
                                     auth=(self._userid, self._password),
                                     data=json.dumps(payload),
                                     headers=headers, timeout=(5,3)) # connect, read
                 success = True
-                #self._LOGGER.info(f"{self._host}: {resp.status_code} - {resp.text}")
+                #self._LOGGER.debug(f"{self._host}: {resp.status_code} - {resp.text}")
             except requests.RequestException as re:
                 retry = MAX_RETRY + 1
                 self._error_json['error']['code'] = -2
@@ -210,11 +212,128 @@ class KodiObj():
             print(f'  {method:25} {description}')
 
     def _help_namespace_method(self, ns: str, method: str):
-        help_text = json.loads(self._namespaces[ns][method])
-        print(f'\nSyntax: {ns}.{method}')
-        print('------------------------------------------------------')
-        print(f'{json.dumps(help_text,indent=2)}')
+        help_json = json.loads(self._namespaces[ns][method])
+        print()
+        p_names = self._get_parameter_names(help_json.get('params',[]))
+        print('-------------------------------------------------------------------------------')
+        print(f'Signature   : {ns}.{method}({p_names})')
+        print(f'Description : {help_json["description"]}')
 
+        if len(help_json.get('params',[])) > 0:
+            print('-------------------------------------------------------------------------------')
+            for param in help_json['params']:
+                p_name = self._get_parameter_value(param,'name',"Unknown")
+                p_desc = self._get_parameter_value(param, 'description')
+                p_ref = self._get_parameter_value(param, '$ref')
+                p_types = self._get_types(param)
+                p_req = self._get_parameter_value(param,'required', "False")
+                p_values = self._get_reference_values(param)
+                p_default = self._get_parameter_value(param,'default')
+                p_min_items = self._get_parameter_value(param, 'minItems')
+                p_min = self._get_parameter_value(param,'minimum')
+                p_max = self._get_parameter_value(param,'maximum')
+                print(f'{p_name}')
+                self._print_parameter_line('Desc', p_desc)
+                self._print_parameter_line('Type', p_types)
+                self._print_parameter_line('Min Items', p_min_items)
+                self._print_parameter_line('Required', p_req)
+                self._print_parameter_line('Reference', p_ref)
+                self._print_parameter_line('Values', p_values)
+                self._print_parameter_line('Minimum', p_min)
+                self._print_parameter_line('Maximum', p_max)
+                self._print_parameter_line('Default', p_default)
+
+        self._LOGGER.info(f'{json.dumps(help_json,indent=2)}')
+
+    def _print_parameter_line(self, caption: str, value: str):
+        if value:
+            print(f'   {caption:9}: {value}')
+
+    def _get_parameter_value(self, p_dict: dict, key: str, default: str = None) -> str:
+        token = p_dict.get(key, default)
+        if token:
+            token = str(token)
+        return token
+
+    def _get_parameter_names(self, json_param_list: list) -> list:
+        name_list = []
+        for p_entry in json_param_list:
+            if p_entry.get('required', False) == True:
+                name_list.extend([p_entry['name']])
+            else:
+                name_list.extend([f"[{p_entry['name']}]"])
+        return ', '.join(name_list)
+
+    def _get_types(self, param: dict) -> str:
+        param_type = param.get('type', "String")
+        return_types = type(param_type)
+        self._LOGGER.debug(f'_get_types for: {param}')
+        if type(param_type) is str:
+            return_types = param_type
+        elif type(param_type) is list:
+            types_list = []
+            return_types = ""
+            for token_type in param_type:
+                if "type" in token_type:
+                    types_list.extend([token_type['type']])
+                elif "$ref" in token_type:
+                    ref_types = self._get_reference_types(token_type)
+                    types_list.extend(ref_types.split('|'))
+
+            return_types += '|'.join(list(set(types_list)))
+            
+        self._LOGGER.debug(f'_get_types returns: {return_types}')
+        return return_types
+
+    def _get_reference_types(self, param: dict) -> str:
+        types = None
+        ref_dict = self._get_reference_id_definition(param)
+        if ref_dict:
+            r_types = ref_dict['type']
+            ret_types = []
+            if type(r_types) is str:
+                ret_types.extend([r_types])
+            elif type(r_types) is list:
+                for r_type in ref_dict['type']:
+                    ret_types.extend(r_type['type'])
+            types = '|'.join(ret_types)
+        
+        return types
+
+    def _get_reference_values(self, param: dict) -> str:
+        values = None
+        ref_dict = self._get_reference_id_definition(param)
+        if not ref_dict:
+            ref_dict = param
+        if ref_dict:
+            r_types = ref_dict.get('type')
+            r_enums = []
+            if type(r_types) is str:
+                r_enums = ref_dict.get('enums',[])
+            elif type(r_types) is list:
+                for r_type in ref_dict['type']:
+                    if r_type.get('enums'):
+                        r_enums.extend(r_type['enums'])
+                    elif r_type.get('type') == 'boolean':
+                        r_enums.extend([ 'True', 'False' ])
+                    elif r_type.get('type') == 'integer':
+                        r_max = r_type.get('maximum')
+                        r_min = r_type.get('minimum')
+                        if r_max:
+                            r_enums.extend([f'{r_min}..{r_max}'])
+
+            values = ','.join(r_enums)
+
+        return values
+
+    def _get_reference_id_definition(self, param: dict) -> str:
+        id = param.get('$ref')
+        ref_dict = self._kodi_references.get(id)
+        if ref_dict:
+            self._LOGGER.debug(f'Retrieved referenceId: {id}')
+        else:
+            self._LOGGER.debug(f'No reference found for: {id}')
+        return ref_dict 
 
 # =======================================================================================================================
 # === Module Functions ==================================================================================================
@@ -278,10 +397,10 @@ def parse_input(args: list) -> (str, str, dict):
                     else:
                         parm_kwargs[tokens[0]] = tokens[1]
 
-    LOGGER.info('Parsed Command Input:')
-    LOGGER.info(f'  Namespace : {namespace}')
-    LOGGER.info(f'  Method    : {method}')
-    LOGGER.info(f'  kwargs    : {parm_kwargs}')
+    LOGGER.debug('Parsed Command Input:')
+    LOGGER.debug(f'  Namespace : {namespace}')
+    LOGGER.debug(f'  Method    : {method}')
+    LOGGER.debug(f'  kwargs    : {parm_kwargs}')
     return namespace, method, parm_kwargs
 
 
@@ -366,15 +485,15 @@ def setup_logging(log_level):
     logging.basicConfig(format=lg_format, level=log_level,)
 
 def dump_args(args):
-    LOGGER.info('Runtime Settings:')
-    LOGGER.info('  Key             Value')
-    LOGGER.info('  --------------- -----------------------------------------------')
+    LOGGER.debug('Runtime Settings:')
+    LOGGER.debug('  Key             Value')
+    LOGGER.debug('  --------------- -----------------------------------------------')
     if isinstance(args, dict):
         for k,v in args.items():
-            LOGGER.info(f'  {k:15} {v}')
+            LOGGER.debug(f'  {k:15} {v}')
     else:    
         for entry in args._get_kwargs():
-            LOGGER.info(f'  {entry[0]:15} {entry[1]}')
+            LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
 
 def main():
     default = get_configfile_defaults(None)
