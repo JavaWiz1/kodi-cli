@@ -1,0 +1,6 @@
+# MANIFEST.in
+
+include src/kodi_namespaces.json
+
+# added by check-manifest
+include Pipfile

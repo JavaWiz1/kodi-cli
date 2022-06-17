@@ -1,3 +1,32 @@
+# pyproject.toml
+
 [build-system]
-requires = ["setuptools>=42"]
+requires = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "kodi-cli"
+version = "0.1.0"
+description = "Kodi command-line controller"
+readme = "README.md"
+authors = [{ name = "A DAmico", email = "JavaWiz1@hotmail.com" }]
+license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+]
+keywords = ["kodi", "cli", "command-line", "python"]
+dependencies = [
+    "requests",
+]
+requires-python = ">=3.7"
+
+[project.optional-dependencies]
+dev = []
+
+[project.urls]
+Homepage = "https://github.com/JavaWiz1/kodi-cli"
+
+[project.scripts]
+kodi-cli = "kodi_cli:main"
