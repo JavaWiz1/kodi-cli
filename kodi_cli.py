@@ -136,6 +136,11 @@ class KodiObj():
         self.response_text = text
         self.request_success = success
 
+    def _client_call(self) -> bool:
+        ret_value = False
+
+        return ret_value
+
     def _call_kodi(self, method: str, params: dict = {}) -> bool:
         self._clear_response()
         MAX_RETRY = 2
@@ -151,6 +156,8 @@ class KodiObj():
         while not success and retry < MAX_RETRY:
             try:
                 self._LOGGER.debug(f'  Making call to {self._base_url} for {method}')
+                # TODO: change to http.client to avoid requests package dependency
+                # https://docs.python.org/3/library/http.client.html
                 resp = requests.post(self._base_url,
                                     auth=(self._userid, self._password),
                                     data=json.dumps(payload),
