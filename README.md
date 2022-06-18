@@ -4,7 +4,7 @@
 
 This tool can be used from the command line to execute commands against a target Kodi host via the RPC interface defined at  https://kodi.wiki/view/JSON-RPC_API/v12.  
 
-The available commands are defined via a json file ([**kodi_namespaces.json**](https://github.com/JavaWiz1/kodi-cli/blob/develop/kodi_namespaces.json)) which describes all the namespaces, methods and parameters available for managing the kodi device remotely.  
+The available commands are defined via a json file ([**kodi_namespaces.json**](https://github.com/JavaWiz1/kodi-cli/blob/develop/kodi_namespaces.json)) which describes all the namespaces, methods and parameters available for managing the kodi device remotely. 
 
 **Note** 
 - Not all the commands are fully defined, further iterations of the code will include updates to this file to make more commands available.
@@ -71,10 +71,13 @@ Details for namespaces, methods and parameters may be found at https://kodi.wiki
 ---
 ## Prerequsites:
 
+**Python 3.7+**
 **Python packages**
 <li>requests package</li>
-<li>do a pip install, or use pipenv</li>
 <br>
+Code can be installed via pip or pipx:
+<li>pip install kodi-cli [--user]</li>
+<li>pipx install kodi-cli</li>
 
 **Kodi configuration**
 <li>Remote control via HTTP must be enabled.</li>
@@ -105,17 +108,18 @@ optional arguments:
   -v, --verbose         Turn out verbose output, more parms increase verbosity
   ```
 
+NOTE: the install also creates an entrypoint, so code can be called simply by typing
+***kodi-cli***
+
 ---
 <br>
 You can get help from the command line to view namespaces, namespace methods and calling requirements. 
-Simply
-type ***python kodi_cli.py help*** as the command to get a list of all the namespaces.
 
 Help Examples
 | To  | Command |
 | --- | --- |
 | List Namespaces | ***python kodi_cli.py help*** |
-| List Namespace methods | ***python kodi_cli.py help <Namespace>*** |
+| List Namespace methods | ***python kodi_cli.py help <Namespace>***  |
 | List Namespace method calling requirements | ***python kodi_cli.py help <Namespace.Method>*** 
 </br></br>
 

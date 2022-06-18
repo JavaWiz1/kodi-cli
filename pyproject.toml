@@ -1,32 +1,28 @@
-# pyproject.toml
-
-[build-system]
-requires = ["setuptools>=61.0.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
+[tool.poetry]
 name = "kodi-cli"
 version = "0.1.0"
-description = "Kodi command-line controller"
+description = "Control your Kodi instance(s) via the command-line"
+authors = ["Al DAmico <JavaWiz1@hotmail.com>"]
 readme = "README.md"
-authors = [{ name = "A DAmico", email = "JavaWiz1@hotmail.com" }]
-license = { file = "LICENSE" }
+license = "MIT"
+homepage = "https://github.com/JavaWiz1/kodi-cli"
+keywords = ["kodi", "cli", "command-line", "python"]
 classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
-keywords = ["kodi", "cli", "command-line", "python"]
-dependencies = [
-    "requests",
-]
-requires-python = ">=3.7"
+include = ["kodi_namespaces.json"]
 
-[project.optional-dependencies]
-dev = []
+[tool.poetry.dependencies]
+python = "^3.8"
+requests = "^2.28.0"
 
-[project.urls]
-Homepage = "https://github.com/JavaWiz1/kodi-cli"
+[tool.poetry.dev-dependencies]
 
-[project.scripts]
+[tool.poetry.scripts]
 kodi-cli = "kodi_cli:main"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
