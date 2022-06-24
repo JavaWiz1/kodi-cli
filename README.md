@@ -133,6 +133,7 @@ Help Examples
 | List Namespaces | python kodi_cli.py help  |
 | List Namespace methods | python kodi_cli.py \<Namespace\> help  |
 | List Namespace method calling requirements | python kodi_cli.py <Namespace.Method> help [-v] |
+
 </br></br>
 
 ---
@@ -219,7 +220,7 @@ OUTPUT:
 </br></br>
 
 ---
-### List the ***method calling signature*** for a particular namespace method
+### List the ***method calling signature*** for a namespace method
 
 List the sytax for the Application.SetMute command
 
@@ -252,7 +253,9 @@ OUTPUT:
 </br></br>
 
 ---
-### Example executing a command
+## Command Execution Examples
+
+### Toggle Mute on/off
 
 To toggle the mute on, then off
 

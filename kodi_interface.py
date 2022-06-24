@@ -55,7 +55,8 @@ class KodiObj():
             self._LOGGER.error(f'Must supply Method for namespace \'{namespace}\'')
             return False
 
-        param_template = json.loads(self._namespaces[namespace][method])
+        # param_template = json.loads(self._namespaces[namespace][method])
+        param_template = self._namespaces[namespace][method]
         if param_template['description'] == "NOT IMPLEMENTED.":
             self._LOGGER.error(f'{namespace}.{method} has not been implemented')
             return False
@@ -68,7 +69,8 @@ class KodiObj():
         """Send Namesmpace.Method command to target host"""
         method = f'{namespace}.{command}'
         self._LOGGER.debug(f'Load Command Template : {method}')
-        param_template = json.loads(self._namespaces[namespace][command])
+        # param_template = json.loads(self._namespaces[namespace][command])
+        param_template = self._namespaces[namespace][command]
         parm_list = param_template['params']
         self._LOGGER.debug(f'  template:  {param_template}')
         self._LOGGER.debug(f'  parm_list: {parm_list}')
@@ -144,13 +146,15 @@ class KodiObj():
         print('  Method                              Description')
         print(f"  {'—'*35} {'—'*50}")
         for token in ns_commands:
-            def_block = json.loads(self._namespaces[ns][token])
+            def_block = self._namespaces[ns][token]
+            # def_block = json.loads(self._namespaces[ns][token])
             description = def_block['description']
             method = f'{ns}.{token}'
             print(f'  {method:35} {description}')
 
     def _help_namespace_method(self, ns: str, method: str):
-        help_json = json.loads(self._namespaces[ns][method])
+        # help_json = json.loads(self._namespaces[ns][method])
+        help_json = self._namespaces[ns][method]
         print()
         p_names = self._get_parameter_names(help_json.get('params',[]))
         print(f"{'—'*80}")
@@ -302,14 +306,19 @@ class KodiObj():
     def _get_reference_types(self, param: dict) -> str:
         types = None
         ref_dict = self._get_reference_id_definition(param)
-        if ref_dict:
+        if not ref_dict:
+            types = param.get('$ref')
+        else:
             r_types = ref_dict['type']
             ret_types = []
             if type(r_types) is str:
                 ret_types.extend([r_types])
             elif type(r_types) is list:
                 for r_type in ref_dict['type']:
-                    ret_types.extend(r_type['type'])
+                    val = r_type.get('type')
+                    if not val:
+                        val = r_type.get('$ref')
+                    ret_types.extend([val])
             types = '|'.join(ret_types)
         
         return types
