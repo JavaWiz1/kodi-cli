@@ -184,7 +184,7 @@ def dump_args(args):
             LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
 
 # ==== Main script body =================================================================================
-def main(argv) -> int:
+def main() -> int:
     default = get_configfile_defaults(None)
     parser = argparse.ArgumentParser(description=f'Kodi CLI controller  v{__version__}')
     parser.add_argument("-H","--host", type=str, default=default['host'], help="Kodi hostname")
@@ -219,7 +219,7 @@ def main(argv) -> int:
     if args.info:
         LOGGER.setLevel(logging.DEBUG)
         LOGGER.debug('Command Line:')
-        LOGGER.debug(f'  {" ".join(argv)}')
+        LOGGER.debug(f'  {" ".join(sys.argv)}')
         dump_args(args_dict)
         return 0
 
@@ -253,4 +253,4 @@ def main(argv) -> int:
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())
