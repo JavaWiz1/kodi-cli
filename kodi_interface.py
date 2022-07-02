@@ -1,6 +1,8 @@
+import http.client
 import json
 import logging
 import os
+import socket
 
 import requests
 
@@ -13,9 +15,11 @@ class KodiObj():
         self._LOGGER = logging.getLogger(__name__)
         self._LOGGER.debug("KodiObj created")
         self._host = host
+        self._ip = self._get_ip(host)
         self._port = port
         self._userid = user
         self._password = password
+        self._LOGGER.debug(f'  host: {host}, ip: {self._ip}, port: {port}')
         json_dict = self._load_kodi_namespaces()
         self._namespaces = json_dict['namespaces']
         self._kodi_references = json_dict['references']
@@ -29,6 +33,18 @@ class KodiObj():
                                     "message": "Invalid params."
                                 }
                             }
+
+        if self._LOGGER.getEffectiveLevel() == logging.DEBUG:
+            self._LOGGER.debug('HTTP Logging enabled.')
+            http.client.HTTPConnection.debuglevel = 1
+            # urllib_log = logging.getLogger('urllib3')
+            # urllib_log.setLevel(logging.DEBUG)
+            self._requests_log = logging.getLogger("requests.packages.urllib3")
+            self._requests_log.setLevel(logging.DEBUG)
+            self._requests_log.propagate = True
+            http.client.print = self._http_client_print
+        
+
     def get_namespace_list(self) -> list:
         """Returns a list of the Kodi namespace objeccts"""
         return self._namespaces.keys()
@@ -55,7 +71,6 @@ class KodiObj():
             self._LOGGER.error(f'Must supply Method for namespace \'{namespace}\'')
             return False
 
-        # param_template = json.loads(self._namespaces[namespace][method])
         param_template = self._namespaces[namespace][method]
         if param_template['description'] == "NOT IMPLEMENTED.":
             self._LOGGER.error(f'{namespace}.{method} has not been implemented')
@@ -69,7 +84,6 @@ class KodiObj():
         """Send Namesmpace.Method command to target host"""
         method = f'{namespace}.{command}'
         self._LOGGER.debug(f'Load Command Template : {method}')
-        # param_template = json.loads(self._namespaces[namespace][command])
         param_template = self._namespaces[namespace][command]
         parm_list = param_template['params']
         self._LOGGER.debug(f'  template:  {param_template}')
@@ -185,10 +199,23 @@ class KodiObj():
                 self._print_parameter_line('Maximum', p_max)
                 self._print_parameter_line('Default', p_default)
 
-        self._LOGGER.info(f'{json.dumps(help_json,indent=2)}')
+        self._LOGGER.info(f'\nRaw Json Definition:\n{json.dumps(help_json,indent=2)}')
 
 
     # === Private Class Fuctions ==============================================================
+    def _get_ip(self, host_name: str) -> str:
+        ip = None
+        try:
+            ip = socket.gethostbyname(host_name)
+        except socket.gaierror as sge:
+            self._LOGGER.info(f'{host_name} cannot be resolved: {repr(sge)}')
+        return ip
+
+    # Monkey patch for requests http.client logging        
+    def _http_client_print(self,*args):
+        self._requests_log.debug(" ".join(args))
+        
+
     def _load_kodi_namespaces(self) -> dict:
         """Load kodi namespace definition from configuration json file"""
         this_path = os.path.dirname(os.path.abspath(__file__))
@@ -206,57 +233,54 @@ class KodiObj():
         self.response_status_code = code
         self.response_text = text
         self.request_success = success
+        self._LOGGER.debug('  Response -')
+        self._LOGGER.debug(f'    status_code: {code}')
+        self._LOGGER.debug(f'    resp_test  : {text}')
+        self._LOGGER.debug(f'    success    : {success}')
 
-    def _client_call(self) -> bool:
-        ret_value = False
-
-        return ret_value
 
     def _call_kodi(self, method: str, params: dict = {}) -> bool:
         self._clear_response()
         MAX_RETRY = 2
         payload = {"jsonrpc": "2.0", "id": 1, "method": f"{method}", "params": params }
         headers = {"Content-type": "application/json"}
-        self._LOGGER.debug(f'Prep call to {self._host}')
-        self._LOGGER.debug(f"  URL    : {self._base_url}")
-        self._LOGGER.debug(f"  Method : {method}")
-        self._LOGGER.debug(f"  Payload: {payload}")
+        self._LOGGER.info(f'Prep call to {self._host}')
+        self._LOGGER.info(f"  URL    : {self._base_url}")
+        self._LOGGER.info(f"  Method : {method}")
+        self._LOGGER.info(f"  Payload: {payload}")
 
         retry = 0
         success = False  # default for 1st loop cycle
         while not success and retry < MAX_RETRY:
             try:
-                self._LOGGER.debug(f'  Making call to {self._base_url} for {method}')
+                self._LOGGER.info(f'Making call to {self._base_url} for {method}')
                 resp = requests.post(self._base_url,
                                     auth=(self._userid, self._password),
                                     data=json.dumps(payload),
                                     headers=headers, timeout=(5,3)) # connect, read
+                resp_json = json.loads(resp.text)
+                if 'error' in resp_json.keys():
+                    self._set_response(resp_json['error']['code'], resp.text, True)
+                else:
+                    self._set_response(0, resp.text, True)
                 success = True
-                #self._LOGGER.debug(f"{self._host}: {resp.status_code} - {resp.text}")
             except requests.RequestException as re:
+                self._LOGGER.debug(repr(re))
                 retry = MAX_RETRY + 1
                 self._error_json['error']['code'] = -20
                 self._error_json['error']['data']['method'] = method
                 self._error_json['error']['message'] = repr(re)
                 self._set_response(-20, json.dumps(self._error_json))
             except Exception as ce:
+                self._LOGGER.debug(repr(ce))
                 retry += 1
                 if not hasattr(ce, "message"):
                     self._error_json['error']['code'] = -30
                     self._error_json['error']['code']['data']['method'] = method
                     self._error_json['error']['message'] = repr(ce)
                     self._set_response(-30, json.dumps(self._error_json))
-                    self._LOGGER.error(f'Exception{retry}: {resp}')
                 time.sleep(2)
 
-        if success:
-            resp_json = json.loads(resp.text)
-            if 'error' in resp_json.keys():
-                self._set_response(resp_json['error']['code'], resp.text, True)
-            else:
-                self._set_response(0, resp.text, True)
-
-        # print(f"  [{self.request_success}] ({self.response_status_code}) {self.response_text}")
         return success
 
 

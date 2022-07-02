@@ -4,13 +4,14 @@ import logging
 import os
 import pathlib
 import sys
+import version as ver_info
 
 from kodi_interface import KodiObj
 
 LOGGER = logging.getLogger(__name__)
 DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
 DFLT_LOG_LEVEL = logging.ERROR
-
+__version__ = ver_info.get_version("kodi-cli")
 
 # === Validation routines =================================================
 def is_integer(token: str) -> bool:
@@ -134,13 +135,14 @@ def get_configfile_defaults(cmdline_args) -> dict:
         for entry in cmdline_args._get_kwargs():
             if entry[1]:
                 cfg_dict[entry[0]] = entry[1]
+    # add version
+    cfg_dict["__version__"] = __version__
 
     return cfg_dict
 
 # === Intro help page ================================================================================
 def display_script_help(usage: str):
     """Display script help dialog to explain how program works"""
-    print()
     print(usage)
     print('Commands are based on Kodi namespaces and methods for each namespace.  When executing a command')
     print('you supply the namespace, the method and any parameters (if required).\n')
@@ -174,46 +176,31 @@ def dump_args(args):
     LOGGER.debug('  --------------- -----------------------------------------------')
     if isinstance(args, dict):
         for k,v in args.items():
+            if k == 'password':
+                v = '*'*len(v)
             LOGGER.debug(f'  {k:15} {v}')
     else:    
         for entry in args._get_kwargs():
             LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
 
-def display_defaults(dflt_dict: dict):
-    print('Defaults:')
-    print('Key             Value')
-    print(f"{'—'*15} {'—'*30}")
-    for key, val in dflt_dict.items():
-        print(f'{key:15} {val}')
-    print()
-
-
 # ==== Main script body =================================================================================
-def main() -> int:
+def main(argv) -> int:
     default = get_configfile_defaults(None)
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description=f'Kodi CLI controller  v{__version__}')
     parser.add_argument("-H","--host", type=str, default=default['host'], help="Kodi hostname")
     parser.add_argument("-P","--port", type=int, default=default['port'],help="Kodi RPC listen port")
     parser.add_argument("-u","--user", type=str, default=default['user'],help="Kodi authenticaetion username")
     parser.add_argument("-p","--password", type=str, default=default['password'],help="Kodi autentication password")
     parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
-    parser.add_argument('-l','--list', action='store_true', help='List defaults to console')
     parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
     parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = DEBUG")
+    parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
   
     if args.create_config:
         create_config(args)
         return 0
-
-    if args.list:
-        display_defaults(default)
-        return 0
-
-    if not args.command:
-        display_script_help(parser.format_usage())
-        return -1  # missing arguments
 
     # Create args/settings dict from cmdline and config file
     args_dict = get_configfile_defaults(args)
@@ -225,10 +212,20 @@ def main() -> int:
         elif args.verbose > 1:
             loglvl=logging.DEBUG
     if loglvl != args_dict['log_level']:
-        print(f'log level over-ride, from: {args_dict["log_level"]} to {loglvl}')
+        # print(f'log level over-ride, from: {args_dict["log_level"]} to {loglvl}')
         args_dict['log_level'] = loglvl
 
     setup_logging(args_dict)
+    if args.info:
+        LOGGER.setLevel(logging.DEBUG)
+        LOGGER.debug('Command Line:')
+        LOGGER.debug(f'  {" ".join(argv)}')
+        dump_args(args_dict)
+        return 0
+
+    if not args.command:
+        display_script_help(parser.format_help())
+        return -1  # missing arguments
 
     kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
     if loglvl < logging.ERROR:
@@ -256,4 +253,4 @@ def main() -> int:
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main(sys.argv))
