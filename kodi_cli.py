@@ -25,23 +25,40 @@ def is_integer(token: str) -> bool:
 
 def is_boolean(token: str) -> bool:
     """Return true if string is a boolean"""
-    is_bool = False
     if token in ["True", "true", "False", "false"]:
-        is_bool = True
-    return is_bool
+        return True
+    return False
 
 def is_list(token: str) -> bool:
     """Return true if string represents a list"""
-    is_list = False
     if token.startswith("[") and token.endswith("]"):
-        is_list = True
-    return is_list
+        return True
+    return False
+
+def is_dict(token: str) -> bool:
+    """Return true if string represents a dictionary"""
+    if token.startswith("{") and token.endswith("}"):
+        return True
+    return False
 
 def make_list_from_string(token: str) -> list:
-    """Translate list formatted string to a list"""
+    """Translate list formatted string to a list obj"""
     text = token[1:-1]
     return text.split(",")
 
+def make_dict_from_string(token: str) -> dict:
+    """Translate dict formatted string to a dict obj"""
+    text = token[1:-1]
+    entry_list = text.split(",")
+    whole_list = []
+    for entry in entry_list:
+        key_val = entry.split(":")
+        if is_integer(key_val[1]):
+            key_val[1]=int(key_val[1])
+        whole_list.extend([key_val[0], key_val[1]])
+    it = iter(whole_list)
+    result_dict = dict(zip(it, it))
+    return result_dict
 
 def parse_input(args: list) -> (str, str, dict):
     """Parse program CLI command parameters, return Namespace, Method, Parms as a tuple"""
@@ -59,48 +76,49 @@ def parse_input(args: list) -> (str, str, dict):
             method = tokens[1]
         if len(args) > 1:
             for parm_block in args[1:]:
-                # param_key=param_value
-                # param_key=[a,list,of,stuff]
+                # param_key=param_value OR param_key=[a,list,of,stuff]
                 tokens = parm_block.split("=")
                 if len(tokens) == 1:
                     parm_kwargs[tokens[0]] = ""
                 else:
                     if is_list(tokens[1]):
                         parm_kwargs[tokens[0]] = make_list_from_string(tokens[1])
+                    elif is_dict((tokens[1])):
+                        parm_kwargs[tokens[0]] = make_dict_from_string(tokens[1])
                     elif is_integer(tokens[1]):
                         parm_kwargs[tokens[0]] = int(tokens[1])
                     elif is_boolean(tokens[1]):
                         parm_kwargs[tokens[0]] = bool(tokens[1])
                     else:
                         parm_kwargs[tokens[0]] = tokens[1]
-
+    
     LOGGER.debug('Parsed Command Input:')
     LOGGER.debug(f'  Namespace : {namespace}')
     LOGGER.debug(f'  Method    : {method}')
     LOGGER.debug(f'  kwargs    : {parm_kwargs}')
+
     return namespace, method, parm_kwargs
 
 
 # === Config file routines ========================================================================
 def create_config(args) -> bool:
     """Create config dictionary based on config file and command-line parameters"""
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    cfg_file = f'{this_path}{os.sep}kodi_cli.cfg'
-    if pathlib.Path(cfg_file).exists():
+    this_path = pathlib.Path(__file__).absolute().parent
+    cfg_file = this_path / "kodi_cli.cfg"
+    if cfg_file.exists():
         print('ERROR- request to create config file, but it already exists.  Rename or delete.')
         print(f'       {cfg_file}')
         return False
 
     cfg_dict = get_configfile_defaults(args)
     # Remove keys we don't want in the config
-    for key in ['config', 'create_config', 'command']:
+    for key in ['config', 'create_config', 'command', '__version__']:
         try:
             cfg_dict.pop(key)
         except KeyError:
             pass
     # Remove keys that don't have a value
     cfg_dict = {key:val for key, val in cfg_dict.items() if val is not None}
-
     # Convert to json format and save
     cfg_json = json.dumps(cfg_dict, indent=2)
     with open(cfg_file,"w")as cfg_fh:
@@ -109,16 +127,15 @@ def create_config(args) -> bool:
     print(f'{cfg_file} created.')
     return True
 
-def get_configfile_defaults(cmdline_args) -> dict:
-    """Get configfile defaults"""
+def get_configfile_defaults(cmdline_args: dict = None) -> dict:
+    """Get configfile defaults.  Optionally, apply command-line over-rides"""
     # if cfg file exists, us it, otherwise hard-coded defaults
-    this_path = os.path.dirname(os.path.abspath(__file__))
-    cfg_file = f'{this_path}{os.sep}kodi_cli.cfg'
+    this_path = pathlib.Path(__file__).absolute().parent
+    cfg_file = this_path / "kodi_cli.cfg"
     try:
         # Use the config file
         with open(cfg_file, "r") as cfg_fh:
-            cfg_dict = json.load(cfg_fh)
-        
+            cfg_dict = json.load(cfg_fh)   
     except FileNotFoundError:
         # Use hard-coded defaults
         cfg_dict = {
@@ -148,15 +165,15 @@ def display_script_help(usage: str):
     print('you supply the namespace, the method and any parameters (if required).\n')
     print('For example, to display the mute and volume level settings on host kodi001, type:\n')
     print('  python kodi_cli.py -H kodi001 Application.GetProperties properties=[muted,volume]\n')
-    print('TIPS - When calling the script:')
+    print('TIPS - When calling the script')
     print(' - add -h to display script syntax and list of option parameters')
     print(' - enter HELP as the command for a list of available commands (namespaces)')
-    print(' - add -C to create a config file for paraneter defaults.\n')
-    print('To create a configfile:')
+    print(' - add -C to create a config file with parameter defaults.\n')
+    print('To create a configfile')
     print('  - Compose the command line with all the values desired as defaults')
     print('  - Append a -C to the end of the commandline, the file will be created (if it does not already exist)')
     print('  - Any future runs will use the defaults, which can be overridden if needed.\n')
-    print('Help commands:')
+    print('Help commands')
     print('  - list of namespaces:    python kodi_cli.py Help')
     print('  - Methods for Namespace: python kodi_cli.py Help Application')
     print('  - Parameters for Method: python kodi_cli.py Help Application.GetProperties\n')
@@ -183,9 +200,21 @@ def dump_args(args):
         for entry in args._get_kwargs():
             LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
 
+def display_program_info():
+    LOGGER.setLevel(logging.DEBUG)
+    LOGGER.debug('Calling Info-')
+    LOGGER.debug(f'  Command Line : {" ".join(sys.argv)}')
+    LOGGER.debug(f'  Current dir  : {os.getcwd()}')
+    LOGGER.debug('')
+    LOGGER.debug('Host Info-')
+    host_info = ver_info.get_host_info()
+    for k,v in host_info.items():
+        LOGGER.debug(f'  {k:13}: {v}')
+    LOGGER.debug('')
+
 # ==== Main script body =================================================================================
 def main() -> int:
-    default = get_configfile_defaults(None)
+    default = get_configfile_defaults()
     parser = argparse.ArgumentParser(description=f'Kodi CLI controller  v{__version__}')
     parser.add_argument("-H","--host", type=str, default=default['host'], help="Kodi hostname")
     parser.add_argument("-P","--port", type=int, default=default['port'],help="Kodi RPC listen port")
@@ -205,40 +234,38 @@ def main() -> int:
     # Create args/settings dict from cmdline and config file
     args_dict = get_configfile_defaults(args)
     
-    loglvl = default['log_level'] # init from config setting
+    loglvl = default['log_level']
     if args.verbose:
+        # Command line over-ride
         if args.verbose == 1:
             loglvl = logging.INFO
         elif args.verbose > 1:
             loglvl=logging.DEBUG
+
     if loglvl != args_dict['log_level']:
         # print(f'log level over-ride, from: {args_dict["log_level"]} to {loglvl}')
         args_dict['log_level'] = loglvl
 
     setup_logging(args_dict)
     if args.info:
-        LOGGER.setLevel(logging.DEBUG)
-        LOGGER.debug('Command Line:')
-        LOGGER.debug(f'  {" ".join(sys.argv)}')
+        display_program_info()
         dump_args(args_dict)
         return 0
 
     if not args.command:
-        display_script_help(parser.format_help())
+        display_script_help(parser.format_usage())
         return -1  # missing arguments
 
     kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
     if loglvl < logging.ERROR:
         dump_args(args_dict)
 
+    # Process command-line input
     namespace, method, param_dict = parse_input(args.command)
-    
     if namespace == "help":
         kodi.help()
-
     elif 'help' in param_dict.keys():
         kodi.help(f'{namespace}.{method}')
-
     elif not kodi.check_command(namespace, method):
         kodi.help(f'{namespace}.{method}')
         return -2

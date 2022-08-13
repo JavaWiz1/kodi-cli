@@ -3,8 +3,9 @@ import importlib.metadata
 import inspect
 import pathlib
 import logging
+import platform
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger()
 PYTOML_FILE = "pyproject.toml"
 
 def get_version(pkg_name: str) -> str:
@@ -56,3 +57,13 @@ def _get_calling_module_file_version() -> str:
     # print(f'_get_calling_module_file_version: {ver}')
     return ver
 
+
+def get_host_info() -> dict:
+    host_info = {}
+    host_info['Hostname'] = platform.node()
+    host_info['Processor'] = platform.processor()
+    host_info['Release'] = platform.release()
+    host_info['OS Type'] = platform.system()
+    host_info['OS Version'] = platform.version()
+    host_info['Python'] = platform.python_version()
+    return host_info
