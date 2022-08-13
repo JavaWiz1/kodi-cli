@@ -52,13 +52,34 @@ def make_dict_from_string(token: str) -> dict:
     entry_list = text.split(",")
     whole_list = []
     for entry in entry_list:
-        key_val = entry.split(":")
+        key_val = entry.split("=")
         if is_integer(key_val[1]):
             key_val[1]=int(key_val[1])
         whole_list.extend([key_val[0], key_val[1]])
     it = iter(whole_list)
     result_dict = dict(zip(it, it))
     return result_dict
+
+def build_kwargs_from_args(args: list) -> dict:
+    kwargs = {}
+    for parm_block in args:
+        # param_key=param_value OR param_key=[a,list,of,stuff]
+        tokens = parm_block.split("=", 1)
+        if len(tokens) == 1:
+            kwargs[tokens[0]] = ""
+        else:
+            if is_list(tokens[1]):
+                kwargs[tokens[0]] = make_list_from_string(tokens[1])
+            elif is_dict((tokens[1])):
+                kwargs[tokens[0]] = make_dict_from_string(tokens[1])
+            elif is_integer(tokens[1]):
+                kwargs[tokens[0]] = int(tokens[1])
+            elif is_boolean(tokens[1]):
+                kwargs[tokens[0]] = bool(tokens[1])
+            else:
+                kwargs[tokens[0]] = tokens[1]
+    
+    return kwargs
 
 def parse_input(args: list) -> (str, str, dict):
     """Parse program CLI command parameters, return Namespace, Method, Parms as a tuple"""
@@ -75,22 +96,7 @@ def parse_input(args: list) -> (str, str, dict):
             namespace = tokens[0]
             method = tokens[1]
         if len(args) > 1:
-            for parm_block in args[1:]:
-                # param_key=param_value OR param_key=[a,list,of,stuff]
-                tokens = parm_block.split("=")
-                if len(tokens) == 1:
-                    parm_kwargs[tokens[0]] = ""
-                else:
-                    if is_list(tokens[1]):
-                        parm_kwargs[tokens[0]] = make_list_from_string(tokens[1])
-                    elif is_dict((tokens[1])):
-                        parm_kwargs[tokens[0]] = make_dict_from_string(tokens[1])
-                    elif is_integer(tokens[1]):
-                        parm_kwargs[tokens[0]] = int(tokens[1])
-                    elif is_boolean(tokens[1]):
-                        parm_kwargs[tokens[0]] = bool(tokens[1])
-                    else:
-                        parm_kwargs[tokens[0]] = tokens[1]
+            parm_kwargs = build_kwargs_from_args(args[1:])
     
     LOGGER.debug('Parsed Command Input:')
     LOGGER.debug(f'  Namespace : {namespace}')

@@ -89,15 +89,15 @@ class KodiObj():
         self._LOGGER.debug(f'  template:  {param_template}')
         self._LOGGER.debug(f'  parm_list: {parm_list}')
         req_parms = {}
-        self._LOGGER.debug('  Parameter dictionary:')
+        self._LOGGER.info('  Parameter dictionary:')
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
             parm_value = input_params.get(parm_name,None)
             if not parm_value:
                 parm_value = parm_entry.get('default', None)
-            self._LOGGER.debug(f'    Key    : {parm_name:15}  Value: {parm_value}')
+            self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value}')
             req_parms[parm_name] = parm_value
-        self._LOGGER.debug('')
+        self._LOGGER.info('')
         return self._call_kodi(method, req_parms)
 
     # === Help functions ==========================================================
