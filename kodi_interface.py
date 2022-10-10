@@ -211,6 +211,18 @@ class KodiObj():
             self._LOGGER.info(f'{host_name} cannot be resolved: {repr(sge)}')
         return ip
 
+    def _get_console_size(self) -> (int, int):
+        """Return console size in Rows and Columns"""
+        rows = int(os.getenv('LINES', -1))
+        columns = int(os.getenv('COLUMNS', -1))
+        if rows <= 0 or columns <= 0:
+            size = os.get_terminal_size()
+            rows = int(size.lines)
+            columns = int(size.columns)
+
+        return rows, columns
+
+
     # Monkey patch for requests http.client logging        
     def _http_client_print(self,*args):
         self._requests_log.debug(" ".join(args))
@@ -302,8 +314,17 @@ class KodiObj():
 
     def _print_parameter_line(self, caption: str, value: str):
         if value:
-            print(f'   {caption:9}: {value}')
-
+            rows, columns = self._get_console_size()
+            label = f'   {caption:9}: '
+            # max_len is largest size of value before screen overflow
+            max_len = columns - len(label)
+            print(f'{caption}',end='')
+            while len(value) > max_len:
+                idx = value.rfind(",", 0, max_len)
+                print(f'{value[0:idx]}')
+                value = value[idx+1:]
+                print(f"{' '*len(label)}")
+            print(value)
 
     # === Parsing (parameter) routines =========================================================
     def _get_types(self, param: dict) -> str:
