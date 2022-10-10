@@ -9,22 +9,12 @@ The available commands are defined via a json file ([**kodi_namespaces.json**](h
 **Note** 
 - Not all the commands are fully defined, further iterations of the code will include updates to this json file to make more commands available.
 - Namespace and Methods are case-sensitive.  Use help parameter or refer to the [Kodi RPC page](https://kodi.wiki/view/JSON-RPC_API/v12) for proper capitalization.
-- An entrypoint is created on install that allows the script to be run without specifying ***python kodi_cli.py***, simply type ***kodi-cli*** to execute the script.
+- An *entrypoint* is created on install that allows the script to be run without specifying ***python kodi_cli.py***, simply type ***kodi-cli*** to execute the script.
 </br></br>
+The documentation will reflect calls using the entrypoint as described above.
 
----
-## Some terms:
 
-| Term | Description |
-| ------------- | ---------------------------- |
-| namespace | The data model is split into namespace components which can be called via the API |
-| methods | Each namespace has a number of methods which perform some function within that namespace |
-| command | A command is a namespace method combiniation used to control Kodi function (fmt: Namespace.Method) |
 
-```
-usage: 
-  kodi_cli.py [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-c CONFIG] [-C] [-f] [-v] [command [param ...]]
-```
 </br>
 
 ---
@@ -34,7 +24,7 @@ usage:
 
 For example, to display the mute and volume level settings on host kodi001, the command is constructed as follows:<br>
 
-  `python kodi_cli.py -H kodi001 -f Application.GetProperties properties=[muted,volume]`
+  `kodi-cli -H kodi001 -f Application.GetProperties properties='[muted,volume]'`
 - **-H kodi001** identifies the target host
 - **-f** indicates the output should be formatted
 - **Application.GetProperties** is the command
@@ -53,28 +43,60 @@ The output of the tool is the json response from the Kodi endpoint the command w
   }
 }
 ```
+
+## Some terms:
+
+| Term | Description |
+| ------------- | ---------------------------- |
+| namespace | The data model is split into namespace components which can be called via the API |
+| methods | Each namespace has a number of methods which perform some function within that namespace |
+| command | A command is a namespace method combiniation used to control Kodi function (fmt: Namespace.Method) |
 </br>
+
+---
+
+## Usage
+
+```
+usage: 
+  kodi-cli [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-C] [-f] [-v] [-i] [command [command ...]]
+
+positional arguments:
+  command               RPC command namespace.method (help namespace to list)
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -H HOST, --host HOST  Kodi hostname
+  -P PORT, --port PORT  Kodi RPC listen port
+  -u USER, --user USER  Kodi authenticaetion username
+  -p PASSWORD, --password PASSWORD
+                        Kodi autentication password
+  -C, --create_config   Create empty config
+  -f, --format_output   Format json output
+  -v, --verbose         Verbose output, -v = INFO, -vv = DEBUG
+  -i, --info            display program info and quit
+  ```
+<br>
 
 **TIPS - When calling the script:**
 | action | description |
 | ------ | ----------- |
 | add -h option | to display script syntax and list of option parameters |
 | enter help | as a parameter for help on namespace or namespace.method |
-| add -C | to create a config file for paraneter defaults |
+| add -i | to output runtime and program information |
 | add -f | to format the json output into a friendly format |
-
-**To create a configfile:**
-  - Compose the command line with all the values desired as defaults
-  - Append a -C to command line, the file will be created (if it does not already exist)
-  - Any future runs will use the defaults, which can be overridden if needed.
+| add -c | to create a config file with runtime defaults (see "Create config file to store defaults" below)|
 </br>
 
 **Help commands:**
+You can get help from the command line to view namespaces, namespace methods and calling requirements. 
+
+Help Examples
 | action | example |
 | ------ | ------- |
-| list of namespaces |    `python kodi_cli.py help` |
-| Methods for Namespace | `python kodi_cli.py Application help` |
-| Parameters for Method | `python kodi_cli.py Application.GetProperties help` <br>Note, to get the detailed calling signature add -v |
+| list of namespaces |    `kodi-cli help` |
+| Methods for Namespace | `kodi-cli Application help` |
+| Parameters for Method | `kodi-cli Application.GetProperties help` <br>Note, to get the detailed calling signature add -v |
 
 Details for namespaces, methods and parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12
  
@@ -97,57 +119,17 @@ Code can be installed via pip or pipx:
 </br></br>
 
 ---
-
-## Usage
-
-```
-usage: 
-  kodi_cli.py [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-C] [-l] [-f] [-v] [command [command ...]]
-
-positional arguments:
-  command               RPC command namespace.method (help namespace to list)
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -H HOST, --host HOST  Kodi hostname
-  -P PORT, --port PORT  Kodi RPC listen port
-  -u USER, --user USER  Kodi authenticaetion username
-  -p PASSWORD, --password PASSWORD
-                        Kodi autentication password
-  -C, --create_config   Create empty config
-  -l, --list            List defaults to console
-  -f, --format_output   Format json output
-  -v, --verbose         Verbose output, -v = INFO, -vv = DEBUG
-  ```
-
-NOTE: the install also creates an entrypoint, so code can be called simply by typing
-***kodi-cli***
-
----
-<br>
-You can get help from the command line to view namespaces, namespace methods and calling requirements. 
-
-Help Examples
-| To  | Command |
-| --- | --- |
-| List Namespaces | python kodi_cli.py help  |
-| List Namespace methods | python kodi_cli.py \<Namespace\> help  |
-| List Namespace method calling requirements | python kodi_cli.py <Namespace.Method> help [-v] |
-
-</br></br>
-
----
-## Examples
+## Usage Examples
 ---
 ### Create a config file to store defaults
 To minimize command-line entry, you can store defaults in a config file which will default values on startup.  The
-values can be over-ridded at run-time by provideing the optional argument.
+values can be over-ridded at run-time by providing the optional command-line argument.
 
 To create a default config file, type your standard defaults as if you were going to execute the CLI and add -C at the end.
 The config file will be written with the values.
 ```
 SYNTAX:
-  python kodi_cli.py -u myId -p myPassword -P 8080 -C
+  kodi-cli -u myId -p myPassword -P 8080 -C
 
 OUTPUT:
   a file (kodi_cli.cfg will be written as:
@@ -168,7 +150,7 @@ Namespaces are modules in Kodi, each namespace manages differ aspects of the Kod
 
 ```
 SYNTAX:
-  python kodi_cli.py help
+  kodi-cli help
 
 OUTPUT:
 
@@ -202,9 +184,9 @@ To get a list of supported of supported methods for the ***Application*** namesp
 
 ```
 SYNTAX:
-  python kodi_cli.py Application help
+  kodi-cli Application help
   or
-  python kodi_cli.py Application
+  kodi-cli Application
 
 OUTPUT:
 
@@ -226,7 +208,7 @@ List the sytax for the Application.SetMute command
 
 ```
 SYNTAX:
-  python kodi_cli.py Application.SetMute help
+  kodi-cli Application.SetMute help
 
 OUTPUT:
 
@@ -263,13 +245,13 @@ First call will toggle mute on, 2nd call will toggle mute off.
 
 ```
 SYNTAX:
-  python kodi_cli.py -H ServerName Application.SetMute mute=toggle
+  kodi-cli -H ServerName Application.SetMute mute='toggle'
 
 OUTPUT:
-  python kodi_cli.py -H MyKodiServer Application.SetMute mute=toggle
+  kodi-cli -H MyKodiServer Application.SetMute mute='toggle'
   {"id":1,"jsonrpc":"2.0","result":true}
 
-  python kodi_cli.py -H MyKodiServer Application.SetMute mute=toggle
+  kodi-cli -H MyKodiServer Application.SetMute mute='toggle'
   {"id":1,"jsonrpc":"2.0","result":false}
 ```
 </br></br>
@@ -280,7 +262,7 @@ OUTPUT:
 To retrieve the muted status and volume level for server kodi001
 ```
 SYNTAX:
-  python kodi_cli.py -H kodi001 Application.GetProperties properties=[muted,volume] -f
+  kodi-cli -H kodi001 Application.GetProperties properties='[muted,volume]' -f
 
 OUTPUT:
 {
@@ -296,12 +278,54 @@ OUTPUT:
 </br></br>
 
 ---
+### List AddOns
 
+To retrieve the list of all AddOns
+```
+SYNTAX:
+  kodi-cli -H kodi001 AddOn.GetAddons properties='[name,version,summary]' limits='{start=0,end=99}' -f
+
+OUTPUT:
+{
+  "id": 1,
+  "jsonrpc": "2.0",
+  "result": {
+    "addons": [
+      {
+        "addonid": "audioencoder.kodi.builtin.aac",
+        "name": "AAC encoder",
+        "summary": "AAC Audio Encoder",
+        "type": "kodi.audioencoder",
+        "version": "1.0.2"
+      },
+
+      ...
+      
+      {
+        "addonid": "webinterface.default",
+        "name": "Kodi web interface - Chorus2",
+        "summary": "Default web interface",
+        "type": "xbmc.webinterface",
+        "version": "19.x-2.4.8"
+      }
+    ],
+    "limits": {
+      "end": 43,
+      "start": 0,
+      "total": 43
+    }
+  }
+}      
+
+```
+</br></br>
+
+---
 ### Display a notification on Kodi UI
 To display a warning message on Kodi running on kodi001 for 5 seconds
 ```
 SYNTAX:
-   python kodi_cli.py -H kodi001 GUI.ShowNotification title="Dinner Time" message="Time to eat!" image="warning" displaytime=5000
+   kodi-cli -H kodi001 GUI.ShowNotification title="Dinner Time" message="Time to eat!" image="warning" displaytime=5000
 
 OUTPUT:
 {"id":1,"jsonrpc":"2.0","result":"OK"}
