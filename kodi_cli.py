@@ -62,9 +62,12 @@ def make_dict_from_string(token: str) -> dict:
 
 def build_kwargs_from_args(args: list) -> dict:
     kwargs = {}
+    LOGGER.debug(f'parse args: {args}')
     for parm_block in args:
         # param_key=param_value OR param_key=[a,list,of,stuff]
         tokens = parm_block.split("=", 1)
+        LOGGER.debug(f' parm_block: {parm_block}')
+        LOGGER.debug(f'      tokens: {tokens}')
         if len(tokens) == 1:
             kwargs[tokens[0]] = ""
         else:
@@ -232,7 +235,9 @@ def main() -> int:
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
-  
+    
+    print(f'** args: {args.command}')
+
     if args.create_config:
         create_config(args)
         return 0

@@ -5,11 +5,17 @@ import pathlib
 import logging
 import platform
 
-LOGGER = logging.getLogger()
+LOGGER = logging.getLogger("Version")
 PYTOML_FILE = "pyproject.toml"
 
 def get_version(pkg_name: str) -> str:
-    """Return package version as string"""
+    """
+    Return package version as string.
+    Determines in following order:
+    - pytoml file (if exists)
+    - version from package metadata
+    - module last modified date/time
+    """
     __version__ = None
     # print('Attempt to identify package version...')
     __version__ = _get_pytoml_version(pkg_name) 
@@ -22,7 +28,9 @@ def get_version(pkg_name: str) -> str:
     return __version__
 
 def _get_pytoml_version(pkg_name) -> str:
+    """Retrieve version string from pytoml file"""
     current_dir = pathlib.Path(__file__)
+    # traverse up directory tree looking for pyproject.toml
     toml_dir = [p for p in current_dir.parents if p.parts[-1]==pkg_name][0]
     toml_file = pathlib.Path(toml_dir) / PYTOML_FILE
     ver = None
@@ -37,6 +45,7 @@ def _get_pytoml_version(pkg_name) -> str:
     return ver
 
 def _get_metadata_version(pkg_name: str) -> str:
+    """Retrieve version from package metadata"""
     try:
         ver = importlib.metadata.version(pkg_name)
     except:
@@ -46,6 +55,7 @@ def _get_metadata_version(pkg_name: str) -> str:
     return ver
 
 def _get_calling_module_file_version() -> str:
+    """Retrieve version based on last modified timestamp from calling module file"""
     ver = None
     frms = inspect.stack()
     frm = frms[len(frms)-1] # Lowest frame in the stack
@@ -59,6 +69,13 @@ def _get_calling_module_file_version() -> str:
 
 
 def get_host_info() -> dict:
+    """
+    Return dictionary of host info:
+    - name
+    - Processor
+    - OS Release, Type and Version
+    - Python version
+    """
     host_info = {}
     host_info['Hostname'] = platform.node()
     host_info['Processor'] = platform.processor()
