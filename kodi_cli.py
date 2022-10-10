@@ -4,8 +4,11 @@ import logging
 import os
 import pathlib
 import sys
+import importlib.metadata
 
 from kodi_interface import KodiObj
+
+__version__ = importlib.metadata.version("kodi-cli")
 
 LOGGER = logging.getLogger(__name__)
 DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
@@ -141,6 +144,7 @@ def get_configfile_defaults(cmdline_args) -> dict:
 def display_script_help(usage: str):
     """Display script help dialog to explain how program works"""
     print()
+    print(__version__)
     print(usage)
     print('Commands are based on Kodi namespaces and methods for each namespace.  When executing a command')
     print('you supply the namespace, the method and any parameters (if required).\n')

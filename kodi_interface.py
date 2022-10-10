@@ -103,7 +103,7 @@ class KodiObj():
         self._LOGGER.debug(f'  Namesapce : {namesp}')
         self._LOGGER.debug(f'  Method    : {method}')
 
-        if not namesp or (namesp == "help"):
+        if not namesp or (namesp == "help" or namesp == "Help"):
             self._help_namespaces()
             return
 
@@ -329,7 +329,10 @@ class KodiObj():
         if not ref_dict:
             ref_dict = param
         if ref_dict:
+            if ref_dict.get('items'):
+                ref_dict = ref_dict.get('items')
             r_types = ref_dict.get('type')
+            self._LOGGER.debug(f'r_types: {r_types}')
             r_enums = []
             if type(r_types) is str:
                 r_enums = ref_dict.get('enums',[])
