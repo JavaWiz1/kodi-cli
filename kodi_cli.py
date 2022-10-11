@@ -241,7 +241,7 @@ def main() -> int:
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
     
-    print(f'** args: {args.command}')
+    # print(f'** args: {args.command}')
 
     if args.create_config:
         create_config(args)

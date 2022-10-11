@@ -3,6 +3,7 @@ import json
 import logging
 import os
 import socket
+from sqlite3 import Row
 
 import requests
 
@@ -33,6 +34,9 @@ class KodiObj():
                                     "message": "Invalid params."
                                 }
                             }
+        self._max_rows = 0
+        self._max_cols = 0
+        self._get_console_size()
 
         if self._LOGGER.getEffectiveLevel() == logging.DEBUG:
             self._LOGGER.debug('HTTP Logging enabled.')
@@ -171,12 +175,13 @@ class KodiObj():
         help_json = self._namespaces[ns][method]
         print()
         p_names = self._get_parameter_names(help_json.get('params',[]))
-        print(f"{'—'*80}")
+        print(f"{'—'*self._max_cols}")
         print(f'Signature   : {ns}.{method}({p_names})')
-        print(f'Description : {help_json["description"]}')
+        self._print_parameter_line("Description ", help_json['description'])
+        # print(f'Description : {help_json["description"]}')
 
         if len(help_json.get('params',[])) > 0:
-            print(f"{'—'*80}")
+            print(f"{'—'*self._max_cols}")
             for param in help_json['params']:
                 p_name = self._get_parameter_value(param,'name',"Unknown")
                 p_desc = self._get_parameter_value(param, 'description')
@@ -189,16 +194,16 @@ class KodiObj():
                 p_min = self._get_parameter_value(param,'minimum')
                 p_max = self._get_parameter_value(param,'maximum')
                 print(f'{p_name}')
-                self._print_parameter_line('Desc', p_desc)
-                self._print_parameter_line('Type', p_types)
-                self._print_parameter_line('Min Items', p_min_items)
-                self._print_parameter_line('Required', p_req)
-                self._print_parameter_line('Reference', p_ref)
-                self._print_parameter_line('Values', p_values)
-                self._print_parameter_line('Minimum', p_min)
-                self._print_parameter_line('Maximum', p_max)
-                self._print_parameter_line('Default', p_default)
-
+                self._print_parameter_line('   Desc     ', p_desc)
+                self._print_parameter_line('   Type     ', p_types)
+                self._print_parameter_line('   Min Items', p_min_items)
+                self._print_parameter_line('   Required ', p_req)
+                self._print_parameter_line('   Reference', p_ref)
+                self._print_parameter_line('   Minimum  ', p_min)
+                self._print_parameter_line('   Maximum  ', p_max)
+                self._print_parameter_line('   Default  ', p_default)
+                self._print_parameter_line('   Values   ', p_values)
+                print()
         self._LOGGER.info(f'\nRaw Json Definition:\n{json.dumps(help_json,indent=2)}')
 
 
@@ -211,16 +216,14 @@ class KodiObj():
             self._LOGGER.info(f'{host_name} cannot be resolved: {repr(sge)}')
         return ip
 
-    def _get_console_size(self) -> (int, int):
+    def _get_console_size(self):
         """Return console size in Rows and Columns"""
-        rows = int(os.getenv('LINES', -1))
-        columns = int(os.getenv('COLUMNS', -1))
-        if rows <= 0 or columns <= 0:
+        self._max_rows = int(os.getenv('LINES', -1))
+        self._max_cols = int(os.getenv('COLUMNS', -1))
+        if self._max_rows <= 0 or self._max_cols <= 0:
             size = os.get_terminal_size()
-            rows = int(size.lines)
-            columns = int(size.columns)
-
-        return rows, columns
+            self._max_rows = int(size.lines)
+            self._max_cols = int(size.columns)
 
 
     # Monkey patch for requests http.client logging        
@@ -314,16 +317,21 @@ class KodiObj():
 
     def _print_parameter_line(self, caption: str, value: str):
         if value:
-            rows, columns = self._get_console_size()
-            label = f'   {caption:9}: '
+            self._get_console_size()
+            label = f'{caption:9}: '
             # max_len is largest size of value before screen overflow
-            max_len = columns - len(label)
-            print(f'{caption}',end='')
+            max_len = self._max_cols - len(label)
+            print(f'{label}',end='')
             while len(value) > max_len:
                 idx = value.rfind(",", 0, max_len)
-                print(f'{value[0:idx]}')
-                value = value[idx+1:]
-                print(f"{' '*len(label)}")
+                if idx <= 0:
+                    idx = value.rfind(" ",0, max_len)
+                if idx <= 0:
+                    max_len = len(value)
+                else:
+                    print(f'{value[0:idx+1]}')
+                    value = value[idx+1:]
+                    print(f"{' '*len(label)}",end='')
             print(value)
 
     # === Parsing (parameter) routines =========================================================
@@ -377,7 +385,7 @@ class KodiObj():
             if ref_dict.get('items'):
                 ref_dict = ref_dict.get('items')
             r_types = ref_dict.get('type')
-            self._LOGGER.debug(f'r_types: {r_types}')
+            self._LOGGER.debug(f'r_types: {r_types} - type: {type(r_types)}')
             r_enums = []
             if type(r_types) is str:
                 r_enums = ref_dict.get('enums',[])

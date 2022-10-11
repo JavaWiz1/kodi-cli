@@ -156,6 +156,91 @@
         }
     },
     "references": {
+        "Addon.Content": {
+          "default": "unknown",
+          "enums": [
+            "unknown",
+            "video",
+            "audio",
+            "image",
+            "executable"
+          ],
+          "id": "Addon.Content",
+          "type": "string"
+        },
+        "Addon.Fields": {
+          "extends": "Item.Fields.Base",
+          "id": "Addon.Fields",
+          "items": {
+            "enums": [
+              "name",
+              "version",
+              "summary",
+              "description",
+              "path",
+              "author",
+              "thumbnail",
+              "disclaimer",
+              "fanart",
+              "dependencies",
+              "broken",
+              "extrainfo",
+              "rating",
+              "enabled",
+              "installed",
+              "deprecated"
+            ],
+            "type": "string"
+          }
+        },
+        "Addon.Types": {
+          "default": "unknown",
+          "enums": [
+            "unknown",
+            "xbmc.player.musicviz",
+            "xbmc.gui.skin",
+            "kodi.pvrclient",
+            "kodi.inputstream",
+            "kodi.gameclient",
+            "kodi.peripheral",
+            "xbmc.python.script",
+            "xbmc.python.weather",
+            "xbmc.subtitle.module",
+            "xbmc.python.lyrics",
+            "xbmc.metadata.scraper.albums",
+            "xbmc.metadata.scraper.artists",
+            "xbmc.metadata.scraper.movies",
+            "xbmc.metadata.scraper.musicvideos",
+            "xbmc.metadata.scraper.tvshows",
+            "xbmc.ui.screensaver",
+            "xbmc.python.pluginsource",
+            "xbmc.addon.repository",
+            "xbmc.webinterface",
+            "xbmc.service",
+            "kodi.audioencoder",
+            "kodi.context.item",
+            "kodi.audiodecoder",
+            "kodi.resource.images",
+            "kodi.resource.language",
+            "kodi.resource.uisounds",
+            "kodi.resource.games",
+            "kodi.resource.font",
+            "kodi.vfs",
+            "kodi.imagedecoder",
+            "xbmc.metadata.scraper.library",
+            "xbmc.python.library",
+            "xbmc.python.module",
+            "kodi.game.controller",
+            "",
+            "xbmc.addon.video",
+            "xbmc.addon.audio",
+            "xbmc.addon.image",
+            "xbmc.addon.executable",
+            "kodi.addon.game"
+          ],
+          "id": "Addon.Types",
+          "type": "string"
+        },
         "Application.Property.Name": {
             "default": "volume",
             "enums": [
@@ -168,6 +253,89 @@
             ],
             "id": "Application.Property.Name",
             "type": "string"
+        },
+        "Audio.Fields.Album": {
+          "extends": "Item.Fields.Base",
+          "id": "Audio.Fields.Album",
+          "items": {
+            "description": "Requesting the songgenres, artistid and/or sourceid fields will result in increased response times",
+            "enums": [
+              "title",
+              "description",
+              "artist",
+              "genre",
+              "theme",
+              "mood",
+              "style",
+              "type",
+              "albumlabel",
+              "rating",
+              "votes",
+              "userrating",
+              "year",
+              "musicbrainzalbumid",
+              "musicbrainzalbumartistid",
+              "fanart",
+              "thumbnail",
+              "playcount",
+              "artistid",
+              "displayartist",
+              "compilation",
+              "releasetype",
+              "dateadded",
+              "sortartist",
+              "musicbrainzreleasegroupid",
+              "songgenres",
+              "art",
+              "lastplayed",
+              "sourceid",
+              "isboxset",
+              "totaldiscs",
+              "releasedate",
+              "originaldate",
+              "albumstatus",
+              "datemodified",
+              "datenew",
+              "albumduration"
+            ],
+            "type": "string"
+          }
+        },
+        "Audio.Fields.Artist": {
+          "extends": "Item.Fields.Base",
+          "id": "Audio.Fields.Artist",
+          "items": {
+            "description": "Requesting the (song)genreid/genre, roleid/role or sourceid fields will result in increased response times",
+            "enums": [
+              "instrument",
+              "style",
+              "mood",
+              "born",
+              "formed",
+              "description",
+              "genre",
+              "died",
+              "disbanded",
+              "yearsactive",
+              "musicbrainzartistid",
+              "fanart",
+              "thumbnail",
+              "compilationartist",
+              "dateadded",
+              "roles",
+              "songgenres",
+              "isalbumartist",
+              "sortname",
+              "type",
+              "gender",
+              "disambiguation",
+              "art",
+              "sourceid",
+              "datemodified",
+              "datenew"
+            ],
+            "type": "string"
+          }
         },
         "Global.IncrementDecrement": {
             "default": "increment",
@@ -192,6 +360,12 @@
                     "type": "string"
                 }
             ]
+        },
+        "Library.Id": {
+          "default": -1,
+          "id": "Library.Id",
+          "minimum": 1,
+          "type": "integer"
         },
         "List.Filter.Albums": {
             "id": "List.Filter.Albums",
@@ -226,6 +400,87 @@
                 "$ref": "List.Filter.Rule.Albums"
               }
             ]
+        },
+        "List.Sort" : {
+            "id": "List.Sort",
+            "properties": {
+              "ignorearticle": {
+                "default": false,
+                "type": "boolean"
+              },
+              "method": {
+                "default": "none",
+                "enums": [
+                  "none",
+                  "label",
+                  "date",
+                  "size",
+                  "file",
+                  "path",
+                  "drivetype",
+                  "title",
+                  "track",
+                  "time",
+                  "artist",
+                  "album",
+                  "albumtype",
+                  "genre",
+                  "country",
+                  "year",
+                  "rating",
+                  "userrating",
+                  "votes",
+                  "top250",
+                  "programcount",
+                  "playlist",
+                  "episode",
+                  "season",
+                  "totalepisodes",
+                  "watchedepisodes",
+                  "tvshowstatus",
+                  "tvshowtitle",
+                  "sorttitle",
+                  "productioncode",
+                  "mpaa",
+                  "studio",
+                  "dateadded",
+                  "lastplayed",
+                  "playcount",
+                  "listeners",
+                  "bitrate",
+                  "random",
+                  "totaldiscs",
+                  "originaldate",
+                  "bpm"
+                ],
+                "type": "string"
+              },
+              "order": {
+                "default": "ascending",
+                "enums": [
+                  "ascending",
+                  "descending"
+                ],
+                "type": "string"
+              },
+              "useartistsortname": {
+                "default": false,
+                "type": "boolean"
+              }
+            },
+            "type": "object"
+          },
+        "Optional.Boolean": {
+          "default": null,
+          "id": "Optional.Boolean",
+          "type": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "boolean"
+            }
+          ]
         },
         "Setting.Level": {
             "default": "basic",
