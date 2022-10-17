@@ -419,6 +419,24 @@
               }
             ]
         },
+        "List.Limits": {
+          "additionalProperties": false,
+          "id": "List.Limits",
+          "properties": {
+            "end": {
+              "$ref": "List.Amount",
+              "default": -1,
+              "description": "Index of the last item to return"
+            },
+            "start": {
+              "default": 0,
+              "description": "Index of the first item to return",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "type": "object"
+        },
         "List.Sort" : {
             "id": "List.Sort",
             "properties": {

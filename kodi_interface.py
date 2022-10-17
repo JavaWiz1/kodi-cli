@@ -42,7 +42,7 @@ class HelpParameter():
         self._LOGGER.info(f'populate() - block: {self._parameter_block}')
         self._populate_from_param_dict()
         if self.reference:
-            self._populate_from_reference_dict(self.reference)
+            self.values = self._populate_from_reference_dict(self.reference)
 
 
     def _populate_from_param_dict(self):
@@ -64,9 +64,11 @@ class HelpParameter():
             if items:
                 self.reference = self._get_parameter_value(items, "$ref")
 
-    def _populate_from_reference_dict(self, ref_id: str):
+    def _populate_from_reference_dict(self, ref_id: str) -> str:
         self._LOGGER.info(f'_populate_from_reference_dict({ref_id})')
+        values = None
         ref_block = self._get_reference_id_definition(ref_id)
+        self._LOGGER.debug(f'{ref_block}')
         if ref_block:
             if 'type' not in ref_block:
                 if 'items' in ref_block:
@@ -80,6 +82,7 @@ class HelpParameter():
                 if type(r_types) is str:
                     if r_types == "string":
                         r_enums = ref_block.get('enums',[])
+                        self.types = self._get_types(ref_block)
                     elif r_types == "boolean":
                         r_enums = ['True','False']
 
@@ -94,8 +97,10 @@ class HelpParameter():
                             r_min = r_type.get('minimum')
                             if r_max:
                                 r_enums.extend([f'{r_min}..{r_max}'])
-                self.values += ', '.join(r_enums)
-   
+                    values = ', '.join(r_enums)
+
+        return values
+
     def print_parameter_definition(self):
         print(f'{self.name}')
         self._print_parameter_line('   Desc     ', self.description)
@@ -119,14 +124,25 @@ class HelpParameter():
 
 
     def _get_types(self, block_dict: dict) -> str:
-        return_type = ""
+        return_type = None
         type_token = self._get_parameter_value(block_dict, "type", None)
-        if type_token:
+        self._LOGGER.debug(f'_get_types() - bloc_dict\n    {block_dict}')
+        if not type_token and '$ref' in block_dict:
+                self._LOGGER.info(f'$ref Type refinement: {block_dict}')
+                ref_id = block_dict['$ref']
+                ref_block = self._get_reference_id_definition(ref_id)
+                if ref_block:
+                    return_type = self._get_types(ref_block)
+                # values = self._populate_from_reference_dict(ref_id)
+        else:
             token_type = type(type_token)
             type_caption = f'{type_token}:'
             type_caption = f'{type_caption:10}'
+            self._LOGGER.debug(f'  type_token: {type_token}  token_type: {token_type}  type_caption: {type_caption}')
             if token_type in [ list, dict ]:
                 if token_type is list:
+                    self._LOGGER.info(f'list Type refinement: {block_dict}')
+                    return_type = ""
                     for type_entry in type_token:
                         return_type += f'{self._get_types(type_entry)}|'
                 else:
@@ -134,6 +150,7 @@ class HelpParameter():
                     return_type += f'{self._get_types(type_token)}|'
             elif token_type == str: 
                 if type_token == "boolean":
+                    self._LOGGER.info(f'bool Type refinement: {block_dict}')
                     return_type = f'{type_caption} True,False'
                 elif type_token == "integer":
                     self._LOGGER.info(f'int Type refinement: {block_dict}')
@@ -145,29 +162,34 @@ class HelpParameter():
                     else:
                         return_type = type_token
                 elif 'enums' in block_dict:
+                    self._LOGGER.info(f'enums Type refinement: {block_dict}')
                     enums = block_dict['enums']
                     return_type = f"{type_caption} enum [{','.join(enums)}]"
+                    # return_type = f"{type_caption} enum"
                 else:
                     self._LOGGER.info(f'str Type refinement: {block_dict}')
                     if 'additionalProperties' in block_dict:
                         if 'properties' in block_dict:
-                            return_type = f'{type_caption} {list(block_dict["properties"].keys())[0]}'                  
+                            return_type = f'{type_caption} {list(block_dict["properties"].keys())[0]}'
+                        elif 'type' in block_dict:
+                            return_type = f'{type_caption} {list(block_dict.keys())[0]}'                  
                     elif 'description' in block_dict:
                         return_type = f'{type_caption} {block_dict["description"]}'
+                    elif '$ref' in block_dict:
+                        return_type = f'{type_caption} {block_dict["$ref"]}'
                 if not return_type:
+                    self._LOGGER.info(f'NO Type refinement: {block_dict}')
                     return_type = f'{type_caption} {list(block_dict.keys())[0]}'
             else:   
                 # TODO: Expand here for type  type(range|min|max|...)
-                print(f'unk Type refinement: {block_dict}')
+                self._LOGGER.info(f'unk Type refinement: {block_dict}')
                 return_type = type_token
 
         return return_type
 
     def _get_parameter_value(self, p_dict: dict, key: str, default: str = None) -> str:
         token = p_dict.get(key, default)
-        self._LOGGER.debug(f'_get_parameter_value()  key: {key:15}  dict: {p_dict}')
-        # if token:
-        #     token = str(token)
+        # self._LOGGER.debug(f'_get_parameter_value()  key: {key:15}  dict: {p_dict}')
         return token
 
     def _get_reference_id_definition(self, ref_id: str) -> str:
@@ -260,25 +282,29 @@ class KodiObj():
     
     def check_command(self, namespace: str, method: str, parms: str = None) -> bool:
         """Validate namespace method combination, true if valid, false if not"""
-        self._LOGGER.debug(f'Check Command: {namespace}.{method}')
-        if namespace not in self._namespaces.keys():
-            self._LOGGER.error(f'Invalid namespace \'{namespace}')
-            return False
+        full_namespace = namespace
         if method:
-            if method not in self._namespaces[namespace].keys():
-                self._LOGGER.error(f'\'{method}\' is not valid method\' for namespace \'{namespace}\'')
+            full_namespace += f".{method}"
+        self._LOGGER.debug(f'Check Command: {full_namespace}')
+        if namespace not in self._kodi_references:
+            if namespace not in self._namespaces.keys():
+                self._LOGGER.error(f'Invalid namespace \'{full_namespace}')
                 return False
-        else:
-            self._LOGGER.error(f'Must supply Method for namespace \'{namespace}\'')
-            return False
+            if method:
+                if method not in self._namespaces[namespace].keys():
+                    self._LOGGER.error(f'\'{method}\' is not valid method\' for namespace \'{namespace}\'')
+                    return False
+            else:
+                self._LOGGER.error(f'Must supply Method for namespace \'{namespace}\'')
+                return False
 
-        param_template = self._namespaces[namespace][method]
-        if param_template['description'] == "NOT IMPLEMENTED.":
-            self._LOGGER.error(f'{namespace}.{method} has not been implemented')
-            return False
+            param_template = self._namespaces[namespace][method]
+            if param_template['description'] == "NOT IMPLEMENTED.":
+                self._LOGGER.error(f'{full_namespace} has not been implemented')
+                return False
 
         # TODO: Check for required parameters
-        self._LOGGER.debug(f'  {namespace}.{method} is valid.')
+        self._LOGGER.debug(f'  {full_namespace} is valid.')
         return True
 
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
@@ -306,19 +332,29 @@ class KodiObj():
         """Provide help context for the namespace or namespace.method"""
         namesp = None
         method = None
+        ref_id = None
         if input_string:
-            if "." in input_string:
-                tokens = input_string.split(".")
-                namesp = tokens[0]
-                method = tokens[1]
+            if input_string in self._kodi_references:
+                ref_id = input_string
             else:
-                namesp = input_string
+                if "." in input_string:
+                    tokens = input_string.split(".")
+                    namesp = tokens[0]
+                    method = tokens[1]
+                else:
+                    namesp = input_string
 
         self._LOGGER.debug(f'Help - {input_string}')
         self._LOGGER.debug(f'  Namesapce : {namesp}')
         self._LOGGER.debug(f'  Method    : {method}')
+        self._LOGGER.debug(f'  RefID     : {ref_id}')
+
+        if ref_id:
+            self._help_reference(ref_id)
+            return
 
         if not namesp or (namesp == "help" or namesp == "Help"):
+            # General help
             self._help_namespaces()
             return
 
@@ -337,7 +373,12 @@ class KodiObj():
 
         self._help_namespace_method(namesp, method)
 
+    def _help_sep_line(self) -> str:
+        return f"{'—'*HelpParameter()._max_cols}"
+
+
     def _help_namespaces(self):
+        self._LOGGER.info('_help_namespaces()')
         print("\nKodi namespaces:\n")
         print("   Namespace       Methods")
         print(f"  {'—'*15} {'—'*70}")
@@ -355,6 +396,7 @@ class KodiObj():
             print(f'   {ns:15} {methods}\n')
 
     def _help_namespace(self, ns: str):
+        self._LOGGER.info(f'_help_namespace({ns})')
         ns_commands = self.get_namespace_method_list(ns)
 
         print(f'\n{ns} Namespace:\n')
@@ -366,19 +408,20 @@ class KodiObj():
             description = def_block['description']
             method = f'{ns}.{token}'
             print(f'  {method:35} {description}')
-
+    
     def _help_namespace_method(self, ns: str, method: str):
         # help_json = json.loads(self._namespaces[ns][method])
+        self._LOGGER.info(f'_help_namespace_method({ns}, {method})')
         help_json = self._namespaces[ns][method]
         print()
         param_list = help_json.get('params', [])
         p_names = self._get_parameter_names(param_list)
-        print(f"{'—'*HelpParameter()._max_cols}")
-        print(f'Signature   : {ns}.{method}({p_names})')
-        HelpParameter()._print_parameter_line("Description ", help_json['description'])
+        print(self._help_sep_line())
+        print(f'Signature    : {ns}.{method}({p_names})')
+        HelpParameter()._print_parameter_line("Description", help_json['description'])
+        print(self._help_sep_line())
 
         if len(param_list) > 0:
-            print(f"{'—'*HelpParameter()._max_cols}")
             for param_item in param_list:
                 hp = HelpParameter(param_item, self._kodi_references)
                 hp.populate()
@@ -386,6 +429,13 @@ class KodiObj():
 
         self._LOGGER.debug(f'\nRaw Json Definition:\n{json.dumps(help_json,indent=2)}')
 
+    def _help_reference(self, ref_id: str):
+        self._LOGGER.info(f'__help_reference({ref_id})')
+        help_json = self._kodi_references.get(ref_id)
+        print(self._help_sep_line())
+        print(f'Reference: {ref_id}')
+        print(f'{json.dumps(help_json,indent=2)}')
+        print('')
 
     # === Private Class Fuctions ==============================================================
     def _get_ip(self, host_name: str) -> str:
@@ -397,8 +447,7 @@ class KodiObj():
         return ip
        
     def _http_client_print(self,*args):
-        self._requests_log.debug(" ".join(args))
-        
+        self._requests_log.debug(" ".join(args))    
 
     def _load_kodi_namespaces(self) -> dict:
         """Load kodi namespace definition from configuration json file"""
@@ -421,7 +470,6 @@ class KodiObj():
         self._LOGGER.debug(f'    status_code: {code}')
         self._LOGGER.debug(f'    resp_test  : {text}')
         self._LOGGER.debug(f'    success    : {success}')
-
 
     def _call_kodi(self, method: str, params: dict = {}) -> bool:
         self._clear_response()

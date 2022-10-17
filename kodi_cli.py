@@ -87,16 +87,21 @@ def build_kwargs_from_args(args: list) -> dict:
     
     return kwargs
 
-def parse_input(args: list) -> (str, str, dict):
+def parse_input(args: list) -> (str, str, str, dict):
     """Parse program CLI command parameters, return Namespace, Method, Parms as a tuple"""
     cmd = None
     sub_cmd = None
     parm_kwargs = {}
     namespace = None
     method = None
+    reference = None
     if len(args) > 0:
         namespace = args[0]
-        if "." in namespace:
+        if args[0].count('.') > 1:
+            reference = args[0]
+            print(f'Looks like a reference: {reference}')
+            # method = 'help'
+        elif "." in namespace:
             # namespace.method
             tokens = namespace.split(".")
             namespace = tokens[0]
@@ -107,9 +112,10 @@ def parse_input(args: list) -> (str, str, dict):
     LOGGER.debug('Parsed Command Input:')
     LOGGER.debug(f'  Namespace : {namespace}')
     LOGGER.debug(f'  Method    : {method}')
+    LOGGER.debug(f'  Reference : {reference}')
     LOGGER.debug(f'  kwargs    : {parm_kwargs}')
 
-    return namespace, method, parm_kwargs
+    return reference, namespace, method, parm_kwargs
 
 
 # === Config file routines ========================================================================
@@ -277,8 +283,10 @@ def main() -> int:
         dump_args(args_dict)
 
     # Process command-line input
-    namespace, method, param_dict = parse_input(args.command)
-    if namespace == "help":
+    reference, namespace, method, param_dict = parse_input(args.command)
+    if reference:
+        kodi.help(reference)
+    elif namespace == "help":
         kodi.help()
     elif 'help' in param_dict.keys():
         kodi.help(f'{namespace}.{method}')
