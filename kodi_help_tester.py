@@ -43,22 +43,22 @@ def dump_methods(kodi: KodiObj):
         elif resp == 'y':
             ns_methods = kodi.get_namespace_method_list(ns)
             for method in ns_methods:
-                cmd = f'{ns}.{method}'
-                print(cmd)
-                kodi.help(cmd)
-                print()
-                resp = get_input('Continue (E,I,D,n,q)> ',['E','I','D','y','n','q',''])
+                resp = get_input(f'{ns}.{method} (E,I,D,n,q)> ',['E','I','D','y','n','q',''])
                 if resp in ['E','I','D']:
                     set_loglevel(resp)
                 elif resp == 'q':
                     sys.exit()
                 elif resp == 'n':
                     break
+                cmd = f'{ns}.{method}'
+                print(cmd)
+                kodi.help(cmd)
+                print()
                 print('\n=========================================================================')
 
 def main():
     setup_logging()
-    log_level = get_input("Log Level ('E'rror, 'I'nfo, 'D'ebug)> ", ['E', 'I', 'D'])
+    log_level = "E"
     set_loglevel(log_level)
 
     kodi = KodiObj()

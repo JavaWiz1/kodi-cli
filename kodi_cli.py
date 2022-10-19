@@ -161,7 +161,8 @@ def get_configfile_defaults(cmdline_args: dict = None) -> dict:
                         "port": 8080,
                         "user": "kodiuser",
                         "password": "kodipassword",
-                        "format_output": False, 
+                        "format_output": False,
+                        "json_rpc_loc": "./json-defs",
                         "log_format": f"{DFLT_LOG_FORMAT}",
                         "log_level": DFLT_LOG_LEVEL
                    }
@@ -278,7 +279,7 @@ def main() -> int:
         display_script_help(parser.format_usage())
         return -1  # missing arguments
 
-    kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'])
+    kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'], args_dict['json_rpc_loc'])
     if loglvl < logging.ERROR:
         dump_args(args_dict)
 

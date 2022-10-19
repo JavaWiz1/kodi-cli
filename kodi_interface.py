@@ -2,6 +2,7 @@ import http.client
 import json
 import logging
 import os
+import pathlib
 import socket
 from sqlite3 import Row
 
@@ -42,7 +43,7 @@ class HelpParameter():
         self._LOGGER.info(f'populate() - block: {self._parameter_block}')
         self._populate_from_param_dict()
         if self.reference:
-            self.values = self._populate_from_reference_dict(self.reference)
+            self.values += self._populate_values_from_reference_dict(self.reference)
 
 
     def _populate_from_param_dict(self):
@@ -64,9 +65,9 @@ class HelpParameter():
             if items:
                 self.reference = self._get_parameter_value(items, "$ref")
 
-    def _populate_from_reference_dict(self, ref_id: str) -> str:
+    def _populate_values_from_reference_dict(self, ref_id: str) -> str:
         self._LOGGER.info(f'_populate_from_reference_dict({ref_id})')
-        values = None
+        values = ""
         ref_block = self._get_reference_id_definition(ref_id)
         self._LOGGER.debug(f'{ref_block}')
         if ref_block:
@@ -88,15 +89,16 @@ class HelpParameter():
 
                 elif type(r_types) is list:
                     for r_type in r_types:
-                        if r_type.get('enums'):
-                            r_enums.extend(r_type['enums'])
-                        elif r_type.get('type') == 'boolean':
-                            r_enums.extend(['True','False'])
-                        elif r_type.get('type') == 'integer':
-                            r_max = r_type.get('maximum')
-                            r_min = r_type.get('minimum')
-                            if r_max:
-                                r_enums.extend([f'{r_min}..{r_max}'])
+                        if type(r_type) is dict:
+                            if r_type.get('enums'):
+                                r_enums.extend(r_type['enums'])
+                            elif r_type.get('type') == 'boolean':
+                                r_enums.extend(['True','False'])
+                            elif r_type.get('type') == 'integer':
+                                r_max = r_type.get('maximum')
+                                r_min = r_type.get('minimum')
+                                if r_max:
+                                    r_enums.extend([f'{r_min}..{r_max}'])
                     values = ', '.join(r_enums)
 
         return values
@@ -106,52 +108,66 @@ class HelpParameter():
         self._print_parameter_line('   Desc     ', self.description)
         self._print_parameter_line('   Min Items', self.minItems)
         self._print_parameter_line('   Required ', self.required)
-        self._print_parameter_line('   UniqItems', self.uniqueItems)
-        self._print_parameter_line('   Minimum  ', self.minimum)
+        self._print_parameter_line('   Reference', self.reference)
         # self._print_parameter_line('   Maximum  ', p_max)
         if self.types:
-            type_list = self.types.split('|')
-            type_list = list(filter(None, type_list))
-            type_set = set(type_list)
-            caption = '   Type     '
-            for p_type in type_set:
-                self._print_parameter_line(caption, p_type)
-                caption = '            '
-        self._print_parameter_line('   Reference', self.reference)
+            self._print_types()
+        self._print_parameter_line('   UniqItems', self.uniqueItems)
+        self._print_parameter_line('   Minimum  ', self.minimum)
         self._print_parameter_line('   Values   ', self.values)
         self._print_parameter_line('   Default  ', self.default)
         print()        
 
 
+    def _print_types(self):
+        indent = 8
+        type_list = self.types.split('|')
+        type_list = list(filter(None, type_list))
+        type_set = sorted(set(type_list)) # Remove duplicates
+        caption = '   Type     '
+        for p_type in type_set:
+            if len(p_type) > self._max_cols - len(caption):
+                token = p_type.split('[')
+                if len(token) > 1:
+                    self._print_parameter_line(caption, token[0])
+                    p_type = f'{" "*indent}[{token[1]}'
+                    caption = '            '
+            self._print_parameter_line(caption, p_type, indent)
+            caption = '            '
+
     def _get_types(self, block_dict: dict) -> str:
         return_type = None
+        self._LOGGER.debug(f'_get_types() - bloc_dict\n        {block_dict}')
         type_token = self._get_parameter_value(block_dict, "type", None)
-        self._LOGGER.debug(f'_get_types() - bloc_dict\n    {block_dict}')
         if not type_token and '$ref' in block_dict:
-                self._LOGGER.info(f'$ref Type refinement: {block_dict}')
-                ref_id = block_dict['$ref']
-                ref_block = self._get_reference_id_definition(ref_id)
-                if ref_block:
-                    return_type = self._get_types(ref_block)
-                # values = self._populate_from_reference_dict(ref_id)
+            self._LOGGER.info(f'$ref Type refinement: {block_dict}')
+            ref_id = block_dict['$ref']
+            ref_block = self._get_reference_id_definition(ref_id)
+            if ref_block:
+                return_type = self._get_types(ref_block)
         else:
             token_type = type(type_token)
             type_caption = f'{type_token}:'
-            type_caption = f'{type_caption:10}'
+            type_caption = f'{type_caption:7}'
             self._LOGGER.debug(f'  type_token: {type_token}  token_type: {token_type}  type_caption: {type_caption}')
             if token_type in [ list, dict ]:
                 if token_type is list:
                     self._LOGGER.info(f'list Type refinement: {block_dict}')
                     return_type = ""
                     for type_entry in type_token:
-                        return_type += f'{self._get_types(type_entry)}|'
+                        if type(type_entry) is str:
+                            return_type += f'{type_entry},'
+                        else:
+                            return_type += f'{self._get_types(type_entry)}|'
                 else:
                     self._LOGGER.info(f'dict Type refinement: {block_dict}')
                     return_type += f'{self._get_types(type_token)}|'
+
             elif token_type == str: 
                 if type_token == "boolean":
                     self._LOGGER.info(f'bool Type refinement: {block_dict}')
                     return_type = f'{type_caption} True,False'
+
                 elif type_token == "integer":
                     self._LOGGER.info(f'int Type refinement: {block_dict}')
                     t_max = int(block_dict.get('maximum',-1))
@@ -161,23 +177,28 @@ class HelpParameter():
                         return_type = f'{type_caption} ({t_min}..{t_max})'
                     else:
                         return_type = type_token
-                elif 'enums' in block_dict:
+
+                elif 'enum' in block_dict:
                     self._LOGGER.info(f'enums Type refinement: {block_dict}')
-                    enums = block_dict['enums']
+                    enums = block_dict['enum']
                     return_type = f"{type_caption} enum [{','.join(enums)}]"
                     # return_type = f"{type_caption} enum"
+
                 else:
                     self._LOGGER.info(f'str Type refinement: {block_dict}')
                     if 'additionalProperties' in block_dict:
-                        if 'properties' in block_dict:
-                            return_type = f'{type_caption} {list(block_dict["properties"].keys())[0]}'
-                        elif 'type' in block_dict:
-                            return_type = f'{type_caption} {list(block_dict.keys())[0]}'                  
+                        return_type = f"{type_caption} additionalProperties"
+                    elif 'items' in block_dict:
+                        return_type = f"{type_caption} items"
                     elif 'description' in block_dict:
                         return_type = f'{type_caption} {block_dict["description"]}'
                     elif '$ref' in block_dict:
                         return_type = f'{type_caption} {block_dict["$ref"]}'
-                if not return_type:
+
+                if return_type:
+                    if 'default' in block_dict:  # and not self.default:
+                        self.default = str(block_dict['default'])
+                else:
                     self._LOGGER.info(f'NO Type refinement: {block_dict}')
                     return_type = f'{type_caption} {list(block_dict.keys())[0]}'
             else:   
@@ -185,6 +206,8 @@ class HelpParameter():
                 self._LOGGER.info(f'unk Type refinement: {block_dict}')
                 return_type = type_token
 
+        if return_type.endswith(','):
+            return_type = return_type[:-1]
         return return_type
 
     def _get_parameter_value(self, p_dict: dict, key: str, default: str = None) -> str:
@@ -202,7 +225,7 @@ class HelpParameter():
         return ref_dict 
 
 
-    def _print_parameter_line(cls, caption: str, value: str):
+    def _print_parameter_line(cls, caption: str, value: str, value_indent: int = 0):
         if value:
             cls._get_console_size()
             sep = ":"
@@ -222,20 +245,22 @@ class HelpParameter():
                 else:
                     print(f'{value[0:idx+1]}')
                     value = value[idx+1:].strip()
+                    value = f'{" "*value_indent}{value}'
                     print(f"{' '*len(label)}",end='')
             print(value)
 
-    def _get_console_size(cls):
-        """Return console size in Rows and Columns"""
+    def _get_console_size(cls) -> (int, int):
+        """Retrieve console size in Rows and Columns"""
         cls._max_rows = int(os.getenv('LINES', -1))
         cls._max_cols = int(os.getenv('COLUMNS', -1))
         if cls._max_rows <= 0 or cls._max_cols <= 0:
             size = os.get_terminal_size()
             cls._max_rows = int(size.lines)
             cls._max_cols = int(size.columns)
+        return cls._max_rows, cls._max_cols
 
 class KodiObj():
-    def __init__(self, host: str = "localhost", port: int = 8080, user: str = None, password: str = None):
+    def __init__(self, host: str = "localhost", port: int = 8080, user: str = None, password: str = None, json_loc: str = "./json-defs"):
         self._LOGGER = logging.getLogger(__name__)
         self._LOGGER.debug("KodiObj created")
         self._host = host
@@ -244,9 +269,28 @@ class KodiObj():
         self._userid = user
         self._password = password
         self._LOGGER.debug(f'  host: {host}, ip: {self._ip}, port: {port}')
-        json_dict = self._load_kodi_namespaces()
-        self._namespaces = json_dict['namespaces']
-        self._kodi_references = json_dict['references']
+        
+        json_dict_loc = pathlib.Path(json_loc) / "methods.json"
+        self._LOGGER.debug(f'  Loading method definitionsL {json_dict_loc}')
+        all_methods = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
+        last_ns = ""
+        self._namespaces = {}
+        for entry, value in all_methods.items():
+            token = entry.split('.')
+            ns = token[0]
+            method = token[1]
+            if ns != last_ns:
+                self._namespaces[ns] = {}
+                last_ns = ns
+            self._namespaces[ns][method] = value
+
+        # self._namespaces = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
+        # self._namespaces = json_dict['namespaces']
+        
+        json_dict_loc = pathlib.Path(json_loc) / "types.json"
+        self._LOGGER.debug(f'  Loading reference/types definitionsL {json_dict_loc}')
+        self._kodi_references = self._load_kodi_json_def(json_dict_loc)
+        
         self._base_url = f'http://{host}:{port}/jsonrpc'
         self._error_json = {
                                 "error": {
@@ -275,6 +319,7 @@ class KodiObj():
     def get_namespace_method_list(self, namespace: str) -> list:
         """Returns a list of the methods for the requested namespace"""
         commands = []
+        self._LOGGER.debug(f'retrieving methods for namespace: {namespace}')
         ns = self._namespaces.get(namespace, None)
         if ns:
             commands = ns.keys()
@@ -417,8 +462,9 @@ class KodiObj():
         param_list = help_json.get('params', [])
         p_names = self._get_parameter_names(param_list)
         print(self._help_sep_line())
-        print(f'Signature    : {ns}.{method}({p_names})')
-        HelpParameter()._print_parameter_line("Description", help_json['description'])
+        HelpParameter()._print_parameter_line("Signature", f'{ns}.{method}({p_names})',)
+        # print(f'Signature    : {ns}.{method}({p_names})')
+        HelpParameter()._print_parameter_line("Description", help_json['description'],)
         print(self._help_sep_line())
 
         if len(param_list) > 0:
@@ -449,11 +495,11 @@ class KodiObj():
     def _http_client_print(self,*args):
         self._requests_log.debug(" ".join(args))    
 
-    def _load_kodi_namespaces(self) -> dict:
+    def _load_kodi_json_def(self, file_name: pathlib.Path) -> dict:
         """Load kodi namespace definition from configuration json file"""
-        this_path = os.path.dirname(os.path.abspath(__file__))
-        json_file = f'{this_path}{os.sep}kodi_namespaces.json'
-        with open(json_file,"r") as json_fh:
+        # this_path = os.path.dirname(os.path.abspath(__file__))
+        # json_file = f'{this_path}{os.sep}kodi_namespaces.json'
+        with open(file_name,"r") as json_fh:
             json_data = json.load(json_fh)
         return json_data
 
@@ -551,6 +597,7 @@ class KodiObj():
     def _get_reference_types(self, param: dict) -> str:
         types = None
         ref_dict = self._get_reference_id_definition(param)
+        self._LOGGER.debug(f'_get_reference_types for: {param}')        
         if not ref_dict:
             types = param.get('$ref')
         else:
@@ -567,41 +614,3 @@ class KodiObj():
             types = '|'.join(ret_types)
         
         return types
-
-    # def _get_reference_values(self, param: dict) -> str:
-    #     values = None
-    #     ref_dict = self._get_reference_id_definition(param)
-    #     if not ref_dict:
-    #         ref_dict = param
-    #     if ref_dict:
-    #         if ref_dict.get('items'):
-    #             ref_dict = ref_dict.get('items')
-    #         r_types = ref_dict.get('type')
-    #         self._LOGGER.debug(f'r_types: {r_types} - type: {type(r_types)}')
-    #         r_enums = []
-    #         if type(r_types) is str:
-    #             r_enums = ref_dict.get('enums',[])
-    #         elif type(r_types) is list:
-    #             for r_type in ref_dict['type']:
-    #                 if r_type.get('enums'):
-    #                     r_enums.extend(r_type['enums'])
-    #                 elif r_type.get('type') == 'boolean':
-    #                     r_enums.extend([ 'True', 'False' ])
-    #                 elif r_type.get('type') == 'integer':
-    #                     r_max = r_type.get('maximum')
-    #                     r_min = r_type.get('minimum')
-    #                     if r_max:
-    #                         r_enums.extend([f'{r_min}..{r_max}'])
-
-    #         values = ','.join(r_enums)
-
-    #     return values
-
-    # def _get_reference_id_definition(self, param: dict) -> str:
-    #     id = param.get('$ref')
-    #     ref_dict = self._kodi_references.get(id)
-    #     if ref_dict:
-    #         self._LOGGER.debug(f'Retrieved referenceId: {id}')
-    #     else:
-    #         self._LOGGER.debug(f'No reference found for: {id}')
-    #     return ref_dict 
