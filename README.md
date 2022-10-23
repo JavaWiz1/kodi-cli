@@ -4,14 +4,13 @@
 
 This tool can be used from the command line to execute commands against a target Kodi host via the RPC interface defined at  https://kodi.wiki/view/JSON-RPC_API/v12.  
 
-The available commands are defined via a json file ([**kodi_namespaces.json**](https://github.com/JavaWiz1/kodi-cli/blob/develop/kodi_namespaces.json)) which describes all the namespaces, methods and parameters available for managing the kodi device remotely. 
+The available commands are defined via jsons files ([**methods.json and types.json**](https://github.com/JavaWiz1/kodi-cli/blob/develop/json-defs/)) which describes all the namespaces, methods, parameters (methods.json) and reference types (types.json) for managing the kodi device remotely. These files are copied from the kodi source repository for kodi v19 (matrix).
 
 **Note** 
-- Not all the commands are fully defined, further iterations of the code will include updates to this json file to make more commands available.
-- Namespace and Methods are case-sensitive.  Use help parameter or refer to the [Kodi RPC page](https://kodi.wiki/view/JSON-RPC_API/v12) for proper capitalization.
+- Namespace Methods and Types are case-sensitive.  Use help parameter or refer to the [Kodi RPC page](https://kodi.wiki/view/JSON-RPC_API/v12) for proper capitalization.
 - An *entrypoint* is created on install that allows the script to be run without specifying ***python kodi_cli.py***, simply type ***kodi-cli*** to execute the script.
 </br></br>
-The documentation will reflect calls using the entrypoint as described above.
+The documentation will reflect calls using the entrypoint (*kodi-cli*) as described above.
 
 
 
@@ -20,14 +19,14 @@ The documentation will reflect calls using the entrypoint as described above.
 ---
 ## Overall Description
 
-*Commands* are based on Kodi **namespaces and methods**.  Each namespace (i.e. Application, System,...) has a set of pre-defned methods.  When executing a command you supply the **Namespace.Method parameter(s)** (case-sensitive).
+*Commands* are based on Kodi **namespaces, methods and parameters**.  Each namespace (i.e. Application, System,...) has a set of pre-defned methods.  When executing a command you supply the **Namespace.Method parameter(s)** (case-sensitive).
 
 For example, to display the mute and volume level settings on host kodi001, the command is constructed as follows:<br>
 
-  `kodi-cli -H kodi001 -f Application.GetProperties properties='[muted,volume]'`
+  `kodi-cli -H kodi001 -f Application.GetProperties properties=[muted,volume]`
 - **-H kodi001** identifies the target host
 - **-f** indicates the output should be formatted
-- **Application.GetProperties** is the command
+- **Application.GetProperties** is the parameter
     - *Application* is the namespace
     - *GetProperties* is the method
     - *properties=[muted,volume]* are the parameters
@@ -44,13 +43,19 @@ The output of the tool is the json response from the Kodi endpoint the command w
 }
 ```
 
+When defining an object type parameter, create it as a pseudo dictionary as below:
+
+  `kodi-cli -H kodi001 Addons.GetAddons properties=[name,version,summary] limits={start:0,end:99}`
+ 
+ - **limits** is an object, that contains two values start and end.
 ## Some terms:
 
 | Term | Description |
 | ------------- | ---------------------------- |
 | namespace | The data model is split into namespace components which can be called via the API |
 | methods | Each namespace has a number of methods which perform some function within that namespace |
-| command | A command is a namespace method combiniation used to control Kodi function (fmt: Namespace.Method) |
+| parameter(s) | Each namespace.method command may have required or optional parameters to control the output |
+| command | A command is a namespace, method, parameter combiniation used to control Kodi function (fmt: Namespace.Method) |
 </br>
 
 ---
@@ -58,11 +63,12 @@ The output of the tool is the json response from the Kodi endpoint the command w
 ## Usage
 
 ```
-usage: 
-  kodi-cli [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-C] [-f] [-v] [-i] [command [command ...]]
+usage: kodi-cli [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-C] [-f] [-v] [-i] [command [parameter ...]]
+
+Kodi CLI controller v0.1.7
 
 positional arguments:
-  command               RPC command namespace.method (help namespace to list)
+  command                   RPC command namespace.method (help namespace to list)
 
 optional arguments:
   -h, --help            show this help message and exit
@@ -75,14 +81,14 @@ optional arguments:
   -f, --format_output   Format json output
   -v, --verbose         Verbose output, -v = INFO, -vv = DEBUG
   -i, --info            display program info and quit
-  ```
+```
 <br>
 
 **TIPS - When calling the script:**
 | action | description |
 | ------ | ----------- |
 | add -h option | to display script syntax and list of option parameters |
-| enter help | as a parameter for help on namespace or namespace.method |
+| enter help | as a parameter for help on namespace or namespace.method or namespace.type|
 | add -i | to output runtime and program information |
 | add -f | to format the json output into a friendly format |
 | add -c | to create a config file with runtime defaults (see "Create config file to store defaults" below)|
@@ -96,9 +102,10 @@ Help Examples
 | ------ | ------- |
 | list of namespaces |    `kodi-cli help` |
 | Methods for Namespace | `kodi-cli Application help` |
-| Parameters for Method | `kodi-cli Application.GetProperties help` <br>Note, to get the detailed calling signature add -v |
+| Parameters for Method | `kodi-cli Application.GetProperties help` |
+| Type/References | `kodi-cli List.Filter.Albums` to get the type defintion for the reference |
 
-Details for namespaces, methods and parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12
+Details for namespaces, methods and type parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12
  
 </br>
 
@@ -157,7 +164,7 @@ OUTPUT:
   Kodi namespaces -
     Namespace       Methods
     --------------- ----------------------------------------------------------------------------
-    AddOns          ExecuteAddon, GetAddonDetails, GetAddons, SetAddonEnabled
+    Addons          ExecuteAddon, GetAddonDetails, GetAddons, SetAddonEnabled
 
     Application     GetProperties, Quit, SetMute, SetVolume
 
@@ -207,31 +214,21 @@ OUTPUT:
 List the sytax for the Application.SetMute command
 
 ```
-SYNTAX:
-  kodi-cli Application.SetMute help
-
-OUTPUT:
-
-  Syntax: Application.SetMute
-  ------------------------------------------------------
-  {
-    "description": "Toggle mute/unmute",
-    "params": [
-      {
-        "$ref": "Global.Toggle",
-        "name": "mute",
-        "required": true
-      }
-    ],
-    "permission": "ControlPlayback",
-    "returns": {
-      "description": "Mute state",
-      "type": "boolean"
-    },
-    "type": "method"
-  }
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+Signature    : Application.SetMute(mute)
+Description  : Toggle mute/unmute
+————————————————————————————————————————————————————————————————————————————————————————————————————————————————————————
+mute
+   Required  : True
+   Reference : Global.Toggle
+   Type      : boolean: True,False
+               string: enum [toggle]
+   Values    : True, False
 
 ```
+To use:
+``` kodi-cli -H kodi001 Application.SetMute mute=false ```
+
 </br></br>
 
 ---
@@ -245,13 +242,13 @@ First call will toggle mute on, 2nd call will toggle mute off.
 
 ```
 SYNTAX:
-  kodi-cli -H ServerName Application.SetMute mute='toggle'
+  kodi-cli -H ServerName Application.SetMute mute=toggle
 
 OUTPUT:
-  kodi-cli -H MyKodiServer Application.SetMute mute='toggle'
+  kodi-cli -H MyKodiServer Application.SetMute mute=toggle
   {"id":1,"jsonrpc":"2.0","result":true}
 
-  kodi-cli -H MyKodiServer Application.SetMute mute='toggle'
+  kodi-cli -H MyKodiServer Application.SetMute mute=toggle
   {"id":1,"jsonrpc":"2.0","result":false}
 ```
 </br></br>
@@ -262,7 +259,7 @@ OUTPUT:
 To retrieve the muted status and volume level for server kodi001
 ```
 SYNTAX:
-  kodi-cli -H kodi001 Application.GetProperties properties='[muted,volume]' -f
+  kodi-cli -H kodi001 Application.GetProperties properties=[muted,volume] -f
 
 OUTPUT:
 {
@@ -278,12 +275,12 @@ OUTPUT:
 </br></br>
 
 ---
-### List AddOns
+### List Addons
 
-To retrieve the list of all AddOns
+To retrieve the list of the first five Addons
 ```
 SYNTAX:
-  kodi-cli -H kodi001 AddOn.GetAddons properties='[name,version,summary]' limits='{start=0,end=99}' -f
+  kodi-cli -H kodi001 Addons.GetAddons properties=[name,version,summary] limits={start:0,end:5} -f
 
 OUTPUT:
 {
@@ -310,9 +307,9 @@ OUTPUT:
       }
     ],
     "limits": {
-      "end": 43,
+      "end": 5,
       "start": 0,
-      "total": 43
+      "total": 34
     }
   }
 }      
@@ -335,6 +332,6 @@ OUTPUT:
 
 ---
 Still TODO:
-- Build out kodi_namespaces.json with additional definitions.
 - Edit parameters prior to call to avoid runtime error.
-- Provide additional help/runtime detail on parameters (i.e. enum values)
+- Provide additional help/runtime detail on parameters
+- Different output formats (rather than just raw and formatted json)

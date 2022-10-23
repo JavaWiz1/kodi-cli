@@ -12,10 +12,10 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
 ]
-include = ["kodi_namespaces.json", "CHANGELOG.md", "*.py"]
+include = ["json-defs/*.json", "CHANGELOG.md", "*.py"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 requests = "^2.28.0"
 
 [tool.poetry.dev-dependencies]
