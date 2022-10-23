@@ -1,12 +1,13 @@
 import argparse
+import csv
+import importlib.metadata
 import json
 import logging
 import os
 import pathlib
 import sys
-import importlib.metadata
-import version as ver_info
 
+import version as ver_info
 from kodi_interface import KodiObj
 
 __version__ = importlib.metadata.version("kodi-cli")
@@ -53,19 +54,25 @@ def make_dict_from_string(token: str) -> dict:
     """Translate dict formatted string to a dict obj"""
     text = token[1:-1]
     entry_list = text.split(",")
-    whole_list = []
+    result_dict = {}
+    LOGGER.debug(f'make_dict_from_string({token})')
     for entry in entry_list:
-        key_val = entry.split("=")
-        if is_integer(key_val[1]):
-            key_val[1]=int(key_val[1])
-        whole_list.extend([key_val[0], key_val[1]])
-    it = iter(whole_list)
-    result_dict = dict(zip(it, it))
+        key_val = entry.split(":")
+        LOGGER.debug(f'  key_val: {entry}')
+        key = key_val[0].strip()
+        value = key_val[1].strip()
+        if is_integer(value):
+            value=int(value)
+        elif is_boolean(value):
+            value=bool(value)
+        result_dict[key] = value
+
+    LOGGER.debug(f'make_dict_from_string() returns: {result_dict}')
     return result_dict
 
 def build_kwargs_from_args(args: list) -> dict:
     kwargs = {}
-    LOGGER.debug(f'parse args: {args}')
+    LOGGER.debug(f"build_kwargs_from_args('{args}')")
     for parm_block in args:
         # param_key=param_value OR param_key=[a,list,of,stuff]
         tokens = parm_block.split("=", 1)
@@ -85,6 +92,7 @@ def build_kwargs_from_args(args: list) -> dict:
             else:
                 kwargs[tokens[0]] = tokens[1]
     
+    LOGGER.debug(f'build_kwargs_from_args() returns: {kwargs}')
     return kwargs
 
 def parse_input(args: list) -> (str, str, str, dict):
@@ -245,7 +253,7 @@ def main() -> int:
     parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
     parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = DEBUG")
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
-    parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
+    parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)",metavar='str')
     args = parser.parse_args()
     
     # print(f'** args: {args.command}')

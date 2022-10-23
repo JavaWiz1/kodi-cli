@@ -136,9 +136,9 @@ class HelpParameter():
             caption = '            '
 
     def _get_types(self, block_dict: dict) -> str:
-        return_type = None
+        return_type = ""
         self._LOGGER.debug(f'_get_types() - bloc_dict\n        {block_dict}')
-        type_token = self._get_parameter_value(block_dict, "type", None)
+        type_token = self._get_parameter_value(block_dict, "type", "")
         if not type_token and '$ref' in block_dict:
             self._LOGGER.info(f'$ref Type refinement: {block_dict}')
             ref_id = block_dict['$ref']
@@ -364,11 +364,14 @@ class KodiObj():
         self._LOGGER.info('  Parameter dictionary:')
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
-            parm_value = input_params.get(parm_name,None)
+            parm_value = input_params.get(parm_name, None)
             if not parm_value:
                 parm_value = parm_entry.get('default', None)
-            self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value}')
-            req_parms[parm_name] = parm_value
+            if parm_value:
+                self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value}')
+                req_parms[parm_name] = parm_value
+            else:
+                self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value} BYPASS')
         self._LOGGER.info('')
         return self._call_kodi(method, req_parms)
 
