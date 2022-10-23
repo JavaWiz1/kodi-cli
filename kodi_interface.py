@@ -40,14 +40,14 @@ class HelpParameter():
         
     
     def populate(self):
-        self._LOGGER.info(f'populate() - block: {self._parameter_block}')
+        self._LOGGER.log(logging.TRACE, f'populate() - block: {self._parameter_block}')
         self._populate_from_param_dict()
         if self.reference:
             self.values += self._populate_values_from_reference_dict(self.reference)
 
 
     def _populate_from_param_dict(self):
-        self._LOGGER.info('_populate_from_param_dict()')
+        self._LOGGER.log(logging.TRACE, '_populate_from_param_dict()')
         self.name = self._get_parameter_value(self._parameter_block,'name')
         self.description = self._get_parameter_value(self._parameter_block,'description')
         self.default = self._get_parameter_value(self._parameter_block,'default')
@@ -66,7 +66,7 @@ class HelpParameter():
                 self.reference = self._get_parameter_value(items, "$ref")
 
     def _populate_values_from_reference_dict(self, ref_id: str) -> str:
-        self._LOGGER.info(f'_populate_from_reference_dict({ref_id})')
+        self._LOGGER.log(logging.TRACE, f'_populate_from_reference_dict({ref_id})')
         values = ""
         ref_block = self._get_reference_id_definition(ref_id)
         self._LOGGER.debug(f'{ref_block}')
@@ -99,6 +99,7 @@ class HelpParameter():
                                 r_min = r_type.get('minimum')
                                 if r_max:
                                     r_enums.extend([f'{r_min}..{r_max}'])
+                    r_enums = sorted(set(r_enums)) # unique list
                     values = ', '.join(r_enums)
 
         return values
@@ -137,10 +138,10 @@ class HelpParameter():
 
     def _get_types(self, block_dict: dict) -> str:
         return_type = ""
-        self._LOGGER.debug(f'_get_types() - bloc_dict\n        {block_dict}')
+        self._LOGGER.log(logging.TRACE, f'_get_types() - bloc_dict\n        {block_dict}')
         type_token = self._get_parameter_value(block_dict, "type", "")
         if not type_token and '$ref' in block_dict:
-            self._LOGGER.info(f'$ref Type refinement: {block_dict}')
+            self._LOGGER.log(logging.TRACE, f'$ref Type refinement: {block_dict}')
             ref_id = block_dict['$ref']
             ref_block = self._get_reference_id_definition(ref_id)
             if ref_block:
@@ -149,10 +150,10 @@ class HelpParameter():
             token_type = type(type_token)
             type_caption = f'{type_token}:'
             type_caption = f'{type_caption:7}'
-            self._LOGGER.debug(f'  type_token: {type_token}  token_type: {token_type}  type_caption: {type_caption}')
+            self._LOGGER.log(logging.TRACE,f'  type_token: {type_token}  token_type: {token_type}  type_caption: {type_caption}')
             if token_type in [ list, dict ]:
                 if token_type is list:
-                    self._LOGGER.info(f'list Type refinement: {block_dict}')
+                    self._LOGGER.log(logging.TRACE, f'list Type refinement: {block_dict}')
                     return_type = ""
                     for type_entry in type_token:
                         if type(type_entry) is str:
@@ -160,16 +161,16 @@ class HelpParameter():
                         else:
                             return_type += f'{self._get_types(type_entry)}|'
                 else:
-                    self._LOGGER.info(f'dict Type refinement: {block_dict}')
+                    self._LOGGER.log(logging.TRACE, f'dict Type refinement: {block_dict}')
                     return_type += f'{self._get_types(type_token)}|'
 
             elif token_type == str: 
                 if type_token == "boolean":
-                    self._LOGGER.info(f'bool Type refinement: {block_dict}')
+                    self._LOGGER.log(logging.TRACE, f'bool Type refinement: {block_dict}')
                     return_type = f'{type_caption} True,False'
 
                 elif type_token == "integer":
-                    self._LOGGER.info(f'int Type refinement: {block_dict}')
+                    self._LOGGER.log(logging.TRACE, f'int Type refinement: {block_dict}')
                     t_max = int(block_dict.get('maximum',-1))
                     t_min = int(block_dict.get('minimum', -1))
                     return_type = type_caption
@@ -177,15 +178,15 @@ class HelpParameter():
                         return_type = f'{type_caption} ({t_min}..{t_max})'
                     else:
                         return_type = type_token
-
+                # TODO: Handle 'array' type in block dict
                 elif 'enum' in block_dict:
-                    self._LOGGER.info(f'enums Type refinement: {block_dict}')
-                    enums = block_dict['enum']
+                    self._LOGGER.log(logging.TRACE, f'enums Type refinement: {block_dict}')
+                    enums = sorted(set(block_dict['enum']))
                     return_type = f"{type_caption} enum [{','.join(enums)}]"
                     # return_type = f"{type_caption} enum"
 
                 else:
-                    self._LOGGER.info(f'str Type refinement: {block_dict}')
+                    self._LOGGER.log(logging.TRACE, f'str Type refinement: {block_dict}')
                     if 'additionalProperties' in block_dict:
                         return_type = f"{type_caption} additionalProperties"
                     elif 'items' in block_dict:
@@ -199,15 +200,16 @@ class HelpParameter():
                     if 'default' in block_dict:  # and not self.default:
                         self.default = str(block_dict['default'])
                 else:
-                    self._LOGGER.info(f'NO Type refinement: {block_dict}')
+                    self._LOGGER.log(logging.TRACE, f'NO Type refinement: {block_dict}')
                     return_type = f'{type_caption} {list(block_dict.keys())[0]}'
             else:   
                 # TODO: Expand here for type  type(range|min|max|...)
-                self._LOGGER.info(f'unk Type refinement: {block_dict}')
+                self._LOGGER.log(logging.TRACE, f'unk Type refinement: {block_dict}')
                 return_type = type_token
 
         if return_type.endswith(','):
             return_type = return_type[:-1]
+        self._LOGGER.log(logging.TRACE, f'_get_types() returns: {return_type}')
         return return_type
 
     def _get_parameter_value(self, p_dict: dict, key: str, default: str = None) -> str:
@@ -216,12 +218,12 @@ class HelpParameter():
         return token
 
     def _get_reference_id_definition(self, ref_id: str) -> str:
-        self._LOGGER.info(f'_get_reference_id_definition({ref_id})')
+        self._LOGGER.log(logging.TRACE, f'_get_reference_id_definition({ref_id})')
         ref_dict = self._reference_block.get(ref_id, None)
         if ref_dict:
             self._LOGGER.debug(f'Retrieved referenceId: {ref_id}')
         else:
-            self._LOGGER.info(f'No reference found for: {ref_id}')
+            self._LOGGER.log(logging.TRACE, f'No reference found for: {ref_id}')
         return ref_dict 
 
 
@@ -361,18 +363,18 @@ class KodiObj():
         self._LOGGER.debug(f'  template:  {param_template}')
         self._LOGGER.debug(f'  parm_list: {parm_list}')
         req_parms = {}
-        self._LOGGER.info('  Parameter dictionary:')
+        self._LOGGER.log(logging.TRACE, '  Parameter dictionary:')
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
             parm_value = input_params.get(parm_name, None)
             if not parm_value:
                 parm_value = parm_entry.get('default', None)
             if parm_value:
-                self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value}')
+                self._LOGGER.log(logging.TRACE, f'    Key    : {parm_name:15}  Value: {parm_value}')
                 req_parms[parm_name] = parm_value
             else:
-                self._LOGGER.info(f'    Key    : {parm_name:15}  Value: {parm_value} BYPASS')
-        self._LOGGER.info('')
+                self._LOGGER.log(logging.TRACE, f'    Key    : {parm_name:15}  Value: {parm_value} BYPASS')
+        self._LOGGER.log(logging.TRACE, '')
         return self._call_kodi(method, req_parms)
 
     # === Help functions ==========================================================
@@ -426,7 +428,7 @@ class KodiObj():
 
 
     def _help_namespaces(self):
-        self._LOGGER.info('_help_namespaces()')
+        self._LOGGER.log(logging.TRACE, '_help_namespaces()')
         print("\nKodi namespaces:\n")
         print("   Namespace       Methods")
         print(f"  {'—'*15} {'—'*70}")
@@ -444,7 +446,7 @@ class KodiObj():
             print(f'   {ns:15} {methods}\n')
 
     def _help_namespace(self, ns: str):
-        self._LOGGER.info(f'_help_namespace({ns})')
+        self._LOGGER.log(logging.TRACE, f'_help_namespace({ns})')
         ns_commands = self.get_namespace_method_list(ns)
 
         print(f'\n{ns} Namespace:\n')
@@ -459,7 +461,7 @@ class KodiObj():
     
     def _help_namespace_method(self, ns: str, method: str):
         # help_json = json.loads(self._namespaces[ns][method])
-        self._LOGGER.info(f'_help_namespace_method({ns}, {method})')
+        self._LOGGER.log(logging.TRACE, f'_help_namespace_method({ns}, {method})')
         help_json = self._namespaces[ns][method]
         print()
         param_list = help_json.get('params', [])
@@ -476,10 +478,10 @@ class KodiObj():
                 hp.populate()
                 hp.print_parameter_definition()
 
-        self._LOGGER.debug(f'\nRaw Json Definition:\n{json.dumps(help_json,indent=2)}')
+        self._LOGGER.info(f'\nRaw Json Definition:\n{json.dumps(help_json,indent=2)}')
 
     def _help_reference(self, ref_id: str):
-        self._LOGGER.info(f'__help_reference({ref_id})')
+        self._LOGGER.log(logging.TRACE, f'__help_reference({ref_id})')
         help_json = self._kodi_references.get(ref_id)
         print(self._help_sep_line())
         print(f'Reference: {ref_id}')
@@ -492,7 +494,7 @@ class KodiObj():
         try:
             ip = socket.gethostbyname(host_name)
         except socket.gaierror as sge:
-            self._LOGGER.info(f'{host_name} cannot be resolved: {repr(sge)}')
+            self._LOGGER.log(logging.TRACE, f'{host_name} cannot be resolved: {repr(sge)}')
         return ip
        
     def _http_client_print(self,*args):
@@ -525,16 +527,16 @@ class KodiObj():
         MAX_RETRY = 2
         payload = {"jsonrpc": "2.0", "id": 1, "method": f"{method}", "params": params }
         headers = {"Content-type": "application/json"}
-        self._LOGGER.info(f'Prep call to {self._host}')
-        self._LOGGER.info(f"  URL    : {self._base_url}")
-        self._LOGGER.info(f"  Method : {method}")
-        self._LOGGER.info(f"  Payload: {payload}")
+        self._LOGGER.log(logging.TRACE, f'Prep call to {self._host}')
+        self._LOGGER.log(logging.TRACE, f"  URL    : {self._base_url}")
+        self._LOGGER.log(logging.TRACE, f"  Method : {method}")
+        self._LOGGER.log(logging.TRACE, f"  Payload: {payload}")
 
         retry = 0
         success = False  # default for 1st loop cycle
         while not success and retry < MAX_RETRY:
             try:
-                self._LOGGER.info(f'Making call to {self._base_url} for {method}')
+                self._LOGGER.log(logging.TRACE, f'Making call to {self._base_url} for {method}')
                 resp = requests.post(self._base_url,
                                     auth=(self._userid, self._password),
                                     data=json.dumps(payload),

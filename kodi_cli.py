@@ -6,6 +6,7 @@ import logging
 import os
 import pathlib
 import sys
+import textwrap
 
 import version as ver_info
 from kodi_interface import KodiObj
@@ -214,6 +215,7 @@ def setup_logging(settings_dict: dict):
     # TODO: Externalize logging settings 
     lg_format=settings_dict['log_format']
     lg_level = settings_dict['log_level']
+    # logging.TRACE = logging.DEBUG + 5
     logging.basicConfig(format=lg_format, level=lg_level,)
 
 def dump_args(args):
@@ -245,15 +247,23 @@ def display_program_info():
 def main() -> int:
     default = get_configfile_defaults()
     parser = argparse.ArgumentParser(description=f'Kodi CLI controller  v{__version__}')
+    parser.formatter_class = argparse.RawDescriptionHelpFormatter
+    parser.description = textwrap.dedent('''\
+        command is formatted as follows:
+            Namespace.Method [parameter [parameter] [...]]
+
+        example - Retrieve list of 5 addons:
+            kodi-cli -H myHost Addons.GetAddons properties=[name,version,summary] limits={start:0,end:5}
+        ''')
     parser.add_argument("-H","--host", type=str, default=default['host'], help="Kodi hostname")
     parser.add_argument("-P","--port", type=int, default=default['port'],help="Kodi RPC listen port")
     parser.add_argument("-u","--user", type=str, default=default['user'],help="Kodi authenticaetion username")
     parser.add_argument("-p","--password", type=str, default=default['password'],help="Kodi autentication password")
     parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
     parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
-    parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = DEBUG")
+    parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = TRACE, -vvv DEBUG")
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
-    parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)",metavar='str')
+    parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
     
     # print(f'** args: {args.command}')
@@ -266,12 +276,15 @@ def main() -> int:
     args_dict = get_configfile_defaults(args)
     
     loglvl = default['log_level']
+    logging.TRACE = logging.DEBUG + 5
     if args.verbose:
         # Command line over-ride
         if args.verbose == 1:
             loglvl = logging.INFO
-        elif args.verbose > 1:
-            loglvl=logging.DEBUG
+        elif args.verbose == 2:
+            loglvl=logging.TRACE
+        elif args.verbose > 2:
+            loglvl = logging.DEBUG
 
     if loglvl != args_dict['log_level']:
         # print(f'log level over-ride, from: {args_dict["log_level"]} to {loglvl}')

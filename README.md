@@ -88,7 +88,7 @@ optional arguments:
 | action | description |
 | ------ | ----------- |
 | add -h option | to display script syntax and list of option parameters |
-| enter help | as a parameter for help on namespace or namespace.method or namespace.type|
+| enter help | as a parameter for help on namespace or namespace.method or namespace.type <br>add -v to get json defintion|
 | add -i | to output runtime and program information |
 | add -f | to format the json output into a friendly format |
 | add -c | to create a config file with runtime defaults (see "Create config file to store defaults" below)|

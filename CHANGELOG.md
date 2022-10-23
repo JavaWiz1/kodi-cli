@@ -1,3 +1,12 @@
+# 0.1.8 10/23/2023
+- README.md documentation updates
+- logging updates -v INFO -vv TRACE (new) -vvv DEBUG
+
+# 0.1.7 10/23/2022
+- Use official kodi repo json files for methods and type definitions (replacing kodi_namespaces.json)
+- Updated parsing for help messages
+- bug fix for building paraneter strings when calling the RPC endpoints 
+
 # 0.1.6 8/13/2022
 - Fixed AddOn.GetAddons 
 - Set following as defaults in GetAddons: property=[name] limit={start=0,max=99}
