@@ -1,3 +1,7 @@
+# 0.1.9 10/24/2023
+- Fix bug for locating json definition files
+- Fix bug for handling boolean input parameters
+
 # 0.1.8 10/23/2023
 - README.md documentation updates
 - logging updates -v INFO -vv TRACE (new) -vvv DEBUG

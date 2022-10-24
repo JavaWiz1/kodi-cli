@@ -30,9 +30,11 @@ def is_integer(token: str) -> bool:
 
 def is_boolean(token: str) -> bool:
     """Return true if string is a boolean"""
+    is_bool_str = False
     if token in ["True", "true", "False", "false"]:
-        return True
-    return False
+        is_bool_str = True
+    LOGGER.debug(f'  is_boolean({token}) returns {is_bool_str}')
+    return is_bool_str
 
 def is_list(token: str) -> bool:
     """Return true if string represents a list"""
@@ -65,7 +67,7 @@ def make_dict_from_string(token: str) -> dict:
         if is_integer(value):
             value=int(value)
         elif is_boolean(value):
-            value=bool(value)
+            value = value in ['True', 'true']
         result_dict[key] = value
 
     LOGGER.debug(f'make_dict_from_string() returns: {result_dict}')
@@ -89,7 +91,7 @@ def build_kwargs_from_args(args: list) -> dict:
             elif is_integer(tokens[1]):
                 kwargs[tokens[0]] = int(tokens[1])
             elif is_boolean(tokens[1]):
-                kwargs[tokens[0]] = bool(tokens[1])
+                kwargs[tokens[0]] = tokens[1] in ['True', 'true']
             else:
                 kwargs[tokens[0]] = tokens[1]
     

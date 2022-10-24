@@ -271,8 +271,8 @@ class KodiObj():
         self._userid = user
         self._password = password
         self._LOGGER.debug(f'  host: {host}, ip: {self._ip}, port: {port}')
-        
-        json_dict_loc = pathlib.Path(json_loc) / "methods.json"
+        this_path = pathlib.Path(__file__).absolute().parent
+        json_dict_loc = this_path / pathlib.Path(json_loc) / "methods.json"
         self._LOGGER.debug(f'  Loading method definitionsL {json_dict_loc}')
         all_methods = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
         last_ns = ""
@@ -289,7 +289,7 @@ class KodiObj():
         # self._namespaces = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
         # self._namespaces = json_dict['namespaces']
         
-        json_dict_loc = pathlib.Path(json_loc) / "types.json"
+        json_dict_loc = this_path / pathlib.Path(json_loc) / "types.json"
         self._LOGGER.debug(f'  Loading reference/types definitionsL {json_dict_loc}')
         self._kodi_references = self._load_kodi_json_def(json_dict_loc)
         
@@ -356,6 +356,7 @@ class KodiObj():
 
     def send_request(self, namespace: str, command: str, input_params: dict) -> bool:
         """Send Namesmpace.Method command to target host"""
+        self._LOGGER.log(logging.TRACE, f"send_request('{namespace}'),('{command}'),('{input_params}')")
         method = f'{namespace}.{command}'
         self._LOGGER.debug(f'Load Command Template : {method}')
         param_template = self._namespaces[namespace][command]
@@ -367,9 +368,9 @@ class KodiObj():
         for parm_entry in parm_list:
             parm_name = parm_entry['name']
             parm_value = input_params.get(parm_name, None)
-            if not parm_value:
+            if parm_value is None:
                 parm_value = parm_entry.get('default', None)
-            if parm_value:
+            if parm_value is not None:
                 self._LOGGER.log(logging.TRACE, f'    Key    : {parm_name:15}  Value: {parm_value}')
                 req_parms[parm_name] = parm_value
             else:
@@ -504,6 +505,8 @@ class KodiObj():
         """Load kodi namespace definition from configuration json file"""
         # this_path = os.path.dirname(os.path.abspath(__file__))
         # json_file = f'{this_path}{os.sep}kodi_namespaces.json'
+        if not file_name.exists():
+            raise FileNotFoundError(file_name)
         with open(file_name,"r") as json_fh:
             json_data = json.load(json_fh)
         return json_data
@@ -517,10 +520,10 @@ class KodiObj():
         self.response_status_code = code
         self.response_text = text
         self.request_success = success
-        self._LOGGER.debug('  Response -')
-        self._LOGGER.debug(f'    status_code: {code}')
-        self._LOGGER.debug(f'    resp_test  : {text}')
-        self._LOGGER.debug(f'    success    : {success}')
+        self._LOGGER.log(logging.TRACE, '  Response -')
+        self._LOGGER.log(logging.TRACE, f'    status_code: {code}')
+        self._LOGGER.log(logging.TRACE, f'    resp_test  : {text}')
+        self._LOGGER.log(logging.TRACE, f'    success    : {success}')
 
     def _call_kodi(self, method: str, params: dict = {}) -> bool:
         self._clear_response()
@@ -564,6 +567,8 @@ class KodiObj():
                     self._set_response(-30, json.dumps(self._error_json))
                 time.sleep(2)
 
+        if not success:
+            self._LOGGER.log(logging.TRACE, self._error_json)
         return success
 
     def _get_parameter_names(self, json_param_list: list, identify_optional: bool = True) -> list:
