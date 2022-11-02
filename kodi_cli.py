@@ -8,10 +8,16 @@ import pathlib
 import sys
 import textwrap
 
+import kodi_output_factory as output_factory
 import version as ver_info
 from kodi_interface import KodiObj
 
 __version__ = importlib.metadata.version("kodi-cli")
+
+CSV_CAPABLE_COMMANDS =  {
+    'VideoLibrary.GetRecentlyAddedEpisodes': "episodes" 
+    }
+    
 
 LOGGER = logging.getLogger(__name__)
 DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
@@ -173,6 +179,7 @@ def get_configfile_defaults(cmdline_args: dict = None) -> dict:
                         "user": "kodiuser",
                         "password": "kodipassword",
                         "format_output": False,
+                        "csv_output": False,
                         "json_rpc_loc": "./json-defs",
                         "log_format": f"{DFLT_LOG_FORMAT}",
                         "log_level": DFLT_LOG_LEVEL
@@ -263,6 +270,7 @@ def main() -> int:
     parser.add_argument("-p","--password", type=str, default=default['password'],help="Kodi autentication password")
     parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
     parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
+    parser.add_argument('-c',"--csv", action="store_true", default=default['csv_output'],help="Format csv output (only specific commands")    
     parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = TRACE, -vvv DEBUG")
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
@@ -318,11 +326,26 @@ def main() -> int:
         kodi.help(f'{namespace}.{method}')
         return -2
     else:
+        method_sig = f'{namespace}.{method}'
+        factory = output_factory.ObjectFactory()
+        factory.register_builder("CSV", output_factory.CSV_OutputServiceBuilder())
+        factory.register_builder("JSON", output_factory.JSON_OutputServiceBuilder())
         kodi.send_request(namespace, method, param_dict)
         response = kodi.response_text
-        if args.format_output:
-            response = json.dumps(json.loads(kodi.response_text), indent=2)
-        print(response)
+        if args.csv and method_sig in CSV_CAPABLE_COMMANDS.keys():
+            csv_obj = factory.create("CSV", response_text=response, list_key=CSV_CAPABLE_COMMANDS[method_sig])
+            response = csv_obj.output_result()
+        else:
+            if args.csv:
+                LOGGER.info('csv option is not available for this command...')
+            if args.format_output:
+                json_obj = factory.create("JSON", response_text=response, pretty=True)
+            else:
+                json_obj = factory.create("JSON", response_text=response, pretty=False)
+            response = json_obj.output_result()
+            print(response)
+
+        
         return kodi.response_status_code
 
     return 0
