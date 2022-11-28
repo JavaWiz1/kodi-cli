@@ -1,6 +1,5 @@
 import argparse
 import csv
-import importlib.metadata
 import json
 import logging
 import os
@@ -10,8 +9,6 @@ import textwrap
 
 import version as ver_info
 from kodi_interface import KodiObj
-
-__version__ = importlib.metadata.version("kodi-cli")
 
 LOGGER = logging.getLogger(__name__)
 DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
@@ -232,12 +229,17 @@ def dump_args(args):
     else:    
         for entry in args._get_kwargs():
             LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
+    LOGGER.debug('  ---------------------------------------------------------------')
+
 
 def display_program_info():
     LOGGER.setLevel(logging.DEBUG)
+    this_path = pathlib.Path(__file__).absolute().parent
+
     LOGGER.debug('Calling Info-')
     LOGGER.debug(f'  Command Line : {" ".join(sys.argv)}')
     LOGGER.debug(f'  Current dir  : {os.getcwd()}')
+    LOGGER.debug(f'  Current root : {this_path}')
     LOGGER.debug('')
     LOGGER.debug('Host Info-')
     host_info = ver_info.get_host_info()
