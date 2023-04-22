@@ -262,6 +262,18 @@ class HelpParameter():
         return cls._max_rows, cls._max_cols
 
 class KodiObj():
+    CSV_CAPABLE_COMMANDS =  {
+        'Addons.GetAddons': 'addons',
+        'AudioLibrary.GetAlbums': 'albums',
+        'AudioLibrary.GetArtists': 'artists',
+        'AudioLibrary.GetGenres': 'genres',
+        'AudioLibrary.GetRecentlyAddedAlbums': 'albums',
+        'AudioLibrary.GetRecentlyAddedSongs': 'songs',
+        'AudioLibrary.GetRecentlyPlayedAlbums': 'albums',
+        'AudioLibrary.GetRecentlyPlayedSongs': 'songs',
+        'VideoLibrary.GetRecentlyAddedEpisodes': 'episodes' 
+        }
+
     def __init__(self, host: str = "localhost", port: int = 8080, user: str = None, password: str = None, json_loc: str = "./json-defs"):
         self._LOGGER = logging.getLogger(__name__)
         self._LOGGER.debug("KodiObj created")
@@ -270,29 +282,9 @@ class KodiObj():
         self._port = port
         self._userid = user
         self._password = password
-        self._LOGGER.debug(f'  host: {host}, ip: {self._ip}, port: {port}')
-        this_path = pathlib.Path(__file__).absolute().parent
-        json_dict_loc = this_path / pathlib.Path(json_loc) / "methods.json"
-        self._LOGGER.debug(f'  Loading method definitionsL {json_dict_loc}')
-        all_methods = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
-        last_ns = ""
+        self._kodi_api_version = None
         self._namespaces = {}
-        for entry, value in all_methods.items():
-            token = entry.split('.')
-            ns = token[0]
-            method = token[1]
-            if ns != last_ns:
-                self._namespaces[ns] = {}
-                last_ns = ns
-            self._namespaces[ns][method] = value
-
-        # self._namespaces = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
-        # self._namespaces = json_dict['namespaces']
-        
-        json_dict_loc = this_path / pathlib.Path(json_loc) / "types.json"
-        self._LOGGER.debug(f'  Loading reference/types definitionsL {json_dict_loc}')
-        self._kodi_references = self._load_kodi_json_def(json_dict_loc)
-        
+        self._kodi_references = {}
         self._base_url = f'http://{host}:{port}/jsonrpc'
         self._error_json = {
                                 "error": {
@@ -304,11 +296,34 @@ class KodiObj():
                                 }
                             }
 
+        self._LOGGER.debug(f'  host: {host}, ip: {self._ip}, port: {port}')
+        this_path = pathlib.Path(__file__).absolute().parent
+        json_dict_loc = this_path / pathlib.Path(json_loc) / "methods.json"
+        self._LOGGER.debug(f'  Loading method definitionsL {json_dict_loc}')
+        all_methods = dict(sorted(self._load_kodi_json_def(json_dict_loc).items()))
+        
+        last_ns = ""
+        for entry, value in all_methods.items():
+            token = entry.split('.')
+            ns = token[0]
+            method = token[1]
+            if ns != last_ns:
+                self._namespaces[ns] = {}
+                last_ns = ns
+            self._namespaces[ns][method] = value
+            self._namespaces[ns][method]['csv'] = (entry in KodiObj.CSV_CAPABLE_COMMANDS.keys())
+        
+        json_dict_loc = this_path / pathlib.Path(json_loc) / "types.json"
+        self._LOGGER.debug(f'  Loading reference/types definitions: {json_dict_loc}')
+        self._kodi_references = self._load_kodi_json_def(json_dict_loc)
+
+        kodi_version_loc = this_path / pathlib.Path(json_loc) / "version.txt"
+        self._kodi_api_version = kodi_version_loc.read_text().replace('\n','')
+        self._LOGGER.debug(f'  Kodi RPC Version: {self._kodi_api_version}')
+        
         if self._LOGGER.getEffectiveLevel() == logging.DEBUG:
             self._LOGGER.debug('HTTP Logging enabled.')
             http.client.HTTPConnection.debuglevel = 1
-            # urllib_log = logging.getLogger('urllib3')
-            # urllib_log.setLevel(logging.DEBUG)
             self._requests_log = logging.getLogger("requests.packages.urllib3")
             self._requests_log.setLevel(logging.DEBUG)
             self._requests_log.propagate = True
@@ -470,7 +485,10 @@ class KodiObj():
         print(self._help_sep_line())
         HelpParameter()._print_parameter_line("Signature", f'{ns}.{method}({p_names})',)
         # print(f'Signature    : {ns}.{method}({p_names})')
-        HelpParameter()._print_parameter_line("Description", help_json['description'],)
+        description = help_json['description']
+        if help_json.get('csv') == True:
+            description = f'{description} (csv)'
+        HelpParameter()._print_parameter_line("Description", description,)
         print(self._help_sep_line())
 
         if len(param_list) > 0:

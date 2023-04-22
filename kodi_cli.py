@@ -14,9 +14,17 @@ from kodi_interface import KodiObj
 
 __version__ = importlib.metadata.version("kodi-cli")
 
-CSV_CAPABLE_COMMANDS =  {
-    'VideoLibrary.GetRecentlyAddedEpisodes': "episodes" 
-    }
+# CSV_CAPABLE_COMMANDS =  {
+#     'Addons.GetAddons': 'addons',
+#     'AudioLibrary.GetAlbums': 'albums',
+#     'AudioLibrary.GetArtists': 'artists',
+#     'AudioLibrary.GetGenres': 'genres',
+#     'AudioLibrary.GetRecentlyAddedAlbums': 'albums',
+#     'AudioLibrary.GetRecentlyAddedSongs': 'songs',
+#     'AudioLibrary.GetRecentlyPlayedAlbums': 'albums',
+#     'AudioLibrary.GetRecentlyPlayedSongs': 'songs',
+#     'VideoLibrary.GetRecentlyAddedEpisodes': 'episodes' 
+#     }
     
 
 LOGGER = logging.getLogger(__name__)
@@ -241,6 +249,7 @@ def dump_args(args):
             LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
 
 def display_program_info():
+    kodi = KodiObj()
     LOGGER.setLevel(logging.DEBUG)
     LOGGER.debug('Calling Info-')
     LOGGER.debug(f'  Command Line : {" ".join(sys.argv)}')
@@ -250,6 +259,7 @@ def display_program_info():
     host_info = ver_info.get_host_info()
     for k,v in host_info.items():
         LOGGER.debug(f'  {k:13}: {v}')
+    LOGGER.debug(f'  API version  : {kodi._kodi_api_version}')
     LOGGER.debug('')
 
 # ==== Main script body =================================================================================
@@ -318,37 +328,41 @@ def main() -> int:
     reference, namespace, method, param_dict = parse_input(args.command)
     if reference:
         kodi.help(reference)
-    elif namespace == "help":
+        return 0
+
+    if namespace == "help":
         kodi.help()
-    elif 'help' in param_dict.keys():
-        kodi.help(f'{namespace}.{method}')
-    elif not kodi.check_command(namespace, method):
-        kodi.help(f'{namespace}.{method}')
+        return 0
+
+    method_sig = f'{namespace}.{method}'
+    if 'help' in param_dict.keys():
+        kodi.help(method_sig)
+        return 0
+
+    if not kodi.check_command(namespace, method):
+        kodi.help(method_sig)
         return -2
+    
+    factory = output_factory.ObjectFactory()
+    factory.register_builder("CSV", output_factory.CSV_OutputServiceBuilder())
+    factory.register_builder("JSON", output_factory.JSON_OutputServiceBuilder())
+
+    kodi.send_request(namespace, method, param_dict)
+    response = kodi.response_text
+    if args.csv and method_sig in kodi.CSV_CAPABLE_COMMANDS.keys():
+        json_node = kodi.CSV_CAPABLE_COMMANDS[method_sig]
+        output_obj = factory.create("CSV", response_text=response, list_key=json_node)
     else:
-        method_sig = f'{namespace}.{method}'
-        factory = output_factory.ObjectFactory()
-        factory.register_builder("CSV", output_factory.CSV_OutputServiceBuilder())
-        factory.register_builder("JSON", output_factory.JSON_OutputServiceBuilder())
-        kodi.send_request(namespace, method, param_dict)
-        response = kodi.response_text
-        if args.csv and method_sig in CSV_CAPABLE_COMMANDS.keys():
-            csv_obj = factory.create("CSV", response_text=response, list_key=CSV_CAPABLE_COMMANDS[method_sig])
-            response = csv_obj.output_result()
+        if args.csv:
+            LOGGER.info('csv option is not available for this command...')
+        if args.format_output:
+            pretty = True
         else:
-            if args.csv:
-                LOGGER.info('csv option is not available for this command...')
-            if args.format_output:
-                json_obj = factory.create("JSON", response_text=response, pretty=True)
-            else:
-                json_obj = factory.create("JSON", response_text=response, pretty=False)
-            response = json_obj.output_result()
-            print(response)
-
-        
-        return kodi.response_status_code
-
-    return 0
+            pretty = False
+        output_obj = factory.create("JSON", response_text=response, pretty=pretty)
+    
+    output_obj.output_result()    
+    return kodi.response_status_code
 
 if __name__ == "__main__":
     sys.exit(main())

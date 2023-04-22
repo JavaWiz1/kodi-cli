@@ -35,11 +35,11 @@ class JSON_OutputServiceBuilder:
 
     def __call__(self, response_text: str, pretty: bool = False, **_ignored):
         if not self._instance:
-            self._instance = JSON_OutputSerice(response_text, pretty)
+            self._instance = JSON_OutputService(response_text, pretty)
         return self._instance   
 
 
-class JSON_OutputSerice:
+class JSON_OutputService:
     def __init__(self, output_text: str, pretty: bool = False):
         self._output_text = output_text
         self._pretty = pretty
@@ -49,7 +49,7 @@ class JSON_OutputSerice:
             result = json.dumps(json.loads(self._output_text), indent=2)
         else:
             result = json.dumps(json.loads(self._output_text))
-        return result
+        print(result)
      
 
 # ===========================================================================
@@ -69,8 +69,9 @@ class CSV_OutputService:
 
     def output_result(self):
         data = json.loads(self._output_text)
-        json_list = data['result'][self._list_key]       
-        csv_writer = csv.writer(sys.stdout,lineterminator='\n')
+        json_list = data['result'][self._list_key]
+        sys.stdout.reconfigure(encoding='utf-8')
+        csv_writer = csv.writer(sys.stdout, lineterminator='\n')
         # Counter variable used for writing headers to the CSV file
         count = 0
         for item in json_list:

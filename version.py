@@ -4,6 +4,7 @@ import inspect
 import pathlib
 import logging
 import platform
+import sys
 
 LOGGER = logging.getLogger("Version")
 PYTOML_FILE = "pyproject.toml"
@@ -77,10 +78,19 @@ def get_host_info() -> dict:
     - Python version
     """
     host_info = {}
+    host_info['Platform'] = platform.platform(aliased = True)
     host_info['Hostname'] = platform.node()
     host_info['Processor'] = platform.processor()
-    host_info['Release'] = platform.release()
+    if is_Win11():
+        release = 11
+    else:
+        release = platform.release()
+    host_info['Release'] = release
     host_info['OS Type'] = platform.system()
     host_info['OS Version'] = platform.version()
     host_info['Python'] = platform.python_version()
     return host_info
+
+def is_Win11():
+    if sys.getwindowsversion().build > 20000:return True
+    else:return False
