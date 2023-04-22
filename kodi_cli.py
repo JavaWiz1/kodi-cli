@@ -1,6 +1,5 @@
 import argparse
 import csv
-import importlib.metadata
 import json
 import logging
 import os
@@ -30,6 +29,7 @@ __version__ = importlib.metadata.version("kodi-cli")
 LOGGER = logging.getLogger(__name__)
 DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
 DFLT_LOG_LEVEL = logging.ERROR
+
 __version__ = ver_info.get_version("kodi-cli")
 
 # === Validation routines =================================================
@@ -173,34 +173,38 @@ def create_config(args) -> bool:
 def get_configfile_defaults(cmdline_args: dict = None) -> dict:
     """Get configfile defaults.  Optionally, apply command-line over-rides"""
     # if cfg file exists, us it, otherwise hard-coded defaults
+    default_cfg_dict = {
+                "host": "localhost", 
+                "port": 8080,
+                "user": "kodiuser",
+                "password": "kodipassword",
+                "format_output": False,
+                "csv_output": False,
+                "json_rpc_loc": "./json-defs",
+                "log_format": f"{DFLT_LOG_FORMAT}",
+                "log_level": DFLT_LOG_LEVEL
+    }
+
     this_path = pathlib.Path(__file__).absolute().parent
     cfg_file = this_path / "kodi_cli.cfg"
+    final_dict = {}
     try:
         # Use the config file
         with open(cfg_file, "r") as cfg_fh:
             cfg_dict = json.load(cfg_fh)   
     except FileNotFoundError:
-        # Use hard-coded defaults
-        cfg_dict = {
-                        "host": "localhost", 
-                        "port": 8080,
-                        "user": "kodiuser",
-                        "password": "kodipassword",
-                        "format_output": False,
-                        "csv_output": False,
-                        "json_rpc_loc": "./json-defs",
-                        "log_format": f"{DFLT_LOG_FORMAT}",
-                        "log_level": DFLT_LOG_LEVEL
-                   }
+        cfg_dict = {}
+
+    final_dict = {**default_cfg_dict, **cfg_dict}    
     #  Over-ride with command-line parms
     if cmdline_args:
         for entry in cmdline_args._get_kwargs():
             if entry[1]:
-                cfg_dict[entry[0]] = entry[1]
+                final_dict[entry[0]] = entry[1]
     # add version
-    cfg_dict["__version__"] = __version__
+    final_dict["__version__"] = __version__
 
-    return cfg_dict
+    return final_dict
 
 # === Intro help page ================================================================================
 def display_script_help(usage: str):
@@ -247,13 +251,18 @@ def dump_args(args):
     else:    
         for entry in args._get_kwargs():
             LOGGER.debug(f'  {entry[0]:15} {entry[1]}')
+    LOGGER.debug('  ---------------------------------------------------------------')
+
 
 def display_program_info():
     kodi = KodiObj()
     LOGGER.setLevel(logging.DEBUG)
+    this_path = pathlib.Path(__file__).absolute().parent
+
     LOGGER.debug('Calling Info-')
     LOGGER.debug(f'  Command Line : {" ".join(sys.argv)}')
     LOGGER.debug(f'  Current dir  : {os.getcwd()}')
+    LOGGER.debug(f'  Current root : {this_path}')
     LOGGER.debug('')
     LOGGER.debug('Host Info-')
     host_info = ver_info.get_host_info()
