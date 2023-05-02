@@ -1,17 +1,18 @@
 import argparse
-import csv
+# import csv
+# import importlib
 import json
 import logging
 import os
 import pathlib
 import sys
 import textwrap
+from typing import Tuple
 
+import kodi_common as util
 import kodi_output_factory as output_factory
 import version as ver_info
 from kodi_interface import KodiObj
-
-__version__ = importlib.metadata.version("kodi-cli")
 
 # CSV_CAPABLE_COMMANDS =  {
 #     'Addons.GetAddons': 'addons',
@@ -26,66 +27,66 @@ __version__ = importlib.metadata.version("kodi-cli")
 #     }
     
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger('kodi-cli')
 DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
 DFLT_LOG_LEVEL = logging.ERROR
 
 __version__ = ver_info.get_version("kodi-cli")
 
-# === Validation routines =================================================
-def is_integer(token: str) -> bool:
-    """Return true if string is an integer"""
-    is_int = True
-    try:
-        int(token)
-    except ValueError:
-        is_int = False
-    return is_int
+# # === Validation routines =================================================
+# def is_integer(token: str) -> bool:
+#     """Return true if string is an integer"""
+#     is_int = True
+#     try:
+#         int(token)
+#     except ValueError:
+#         is_int = False
+#     return is_int
 
-def is_boolean(token: str) -> bool:
-    """Return true if string is a boolean"""
-    is_bool_str = False
-    if token in ["True", "true", "False", "false"]:
-        is_bool_str = True
-    LOGGER.debug(f'  is_boolean({token}) returns {is_bool_str}')
-    return is_bool_str
+# def is_boolean(token: str) -> bool:
+#     """Return true if string is a boolean"""
+#     is_bool_str = False
+#     if token in ["True", "true", "False", "false"]:
+#         is_bool_str = True
+#     LOGGER.debug(f'  is_boolean({token}) returns {is_bool_str}')
+#     return is_bool_str
 
-def is_list(token: str) -> bool:
-    """Return true if string represents a list"""
-    if token.startswith("[") and token.endswith("]"):
-        return True
-    return False
+# def is_list(token: str) -> bool:
+#     """Return true if string represents a list"""
+#     if token.startswith("[") and token.endswith("]"):
+#         return True
+#     return False
 
-def is_dict(token: str) -> bool:
-    """Return true if string represents a dictionary"""
-    if token.startswith("{") and token.endswith("}"):
-        return True
-    return False
+# def is_dict(token: str) -> bool:
+#     """Return true if string represents a dictionary"""
+#     if token.startswith("{") and token.endswith("}"):
+#         return True
+#     return False
 
-def make_list_from_string(token: str) -> list:
-    """Translate list formatted string to a list obj"""
-    text = token[1:-1]
-    return text.split(",")
+# def make_list_from_string(token: str) -> list:
+#     """Translate list formatted string to a list obj"""
+#     text = token[1:-1]
+#     return text.split(",")
 
-def make_dict_from_string(token: str) -> dict:
-    """Translate dict formatted string to a dict obj"""
-    text = token[1:-1]
-    entry_list = text.split(",")
-    result_dict = {}
-    LOGGER.debug(f'make_dict_from_string({token})')
-    for entry in entry_list:
-        key_val = entry.split(":")
-        LOGGER.debug(f'  key_val: {entry}')
-        key = key_val[0].strip()
-        value = key_val[1].strip()
-        if is_integer(value):
-            value=int(value)
-        elif is_boolean(value):
-            value = value in ['True', 'true']
-        result_dict[key] = value
+# def make_dict_from_string(token: str) -> dict:
+#     """Translate dict formatted string to a dict obj"""
+#     text = token[1:-1]
+#     entry_list = text.split(",")
+#     result_dict = {}
+#     LOGGER.debug(f'make_dict_from_string({token})')
+#     for entry in entry_list:
+#         key_val = entry.split(":")
+#         LOGGER.debug(f'  key_val: {entry}')
+#         key = key_val[0].strip()
+#         value = key_val[1].strip()
+#         if is_integer(value):
+#             value=int(value)
+#         elif is_boolean(value):
+#             value = value in ['True', 'true']
+#         result_dict[key] = value
 
-    LOGGER.debug(f'make_dict_from_string() returns: {result_dict}')
-    return result_dict
+#     LOGGER.debug(f'make_dict_from_string() returns: {result_dict}')
+#     return result_dict
 
 def build_kwargs_from_args(args: list) -> dict:
     kwargs = {}
@@ -98,13 +99,13 @@ def build_kwargs_from_args(args: list) -> dict:
         if len(tokens) == 1:
             kwargs[tokens[0]] = ""
         else:
-            if is_list(tokens[1]):
-                kwargs[tokens[0]] = make_list_from_string(tokens[1])
-            elif is_dict((tokens[1])):
-                kwargs[tokens[0]] = make_dict_from_string(tokens[1])
-            elif is_integer(tokens[1]):
+            if util.is_list(tokens[1]):
+                kwargs[tokens[0]] = util.make_list_from_string(tokens[1])
+            elif util.is_dict((tokens[1])):
+                kwargs[tokens[0]] = util.make_dict_from_string(tokens[1])
+            elif util.is_integer(tokens[1]):
                 kwargs[tokens[0]] = int(tokens[1])
-            elif is_boolean(tokens[1]):
+            elif util.is_boolean(tokens[1]):
                 kwargs[tokens[0]] = tokens[1] in ['True', 'true']
             else:
                 kwargs[tokens[0]] = tokens[1]
@@ -112,10 +113,10 @@ def build_kwargs_from_args(args: list) -> dict:
     LOGGER.debug(f'build_kwargs_from_args() returns: {kwargs}')
     return kwargs
 
-def parse_input(args: list) -> (str, str, str, dict):
+def parse_input(args: list) -> Tuple[str, str, str, dict]:
     """Parse program CLI command parameters, return Namespace, Method, Parms as a tuple"""
-    cmd = None
-    sub_cmd = None
+    # cmd = None
+    # sub_cmd = None
     parm_kwargs = {}
     namespace = None
     method = None

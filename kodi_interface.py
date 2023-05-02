@@ -344,16 +344,19 @@ class KodiObj():
     
     def check_command(self, namespace: str, method: str, parms: str = None) -> bool:
         """Validate namespace method combination, true if valid, false if not"""
+        self._clear_response()
         full_namespace = namespace
         if method:
             full_namespace += f".{method}"
         self._LOGGER.debug(f'Check Command: {full_namespace}')
         if namespace not in self._kodi_references:
             if namespace not in self._namespaces.keys():
+                self._set_response(-10, f"Invalid namespace \'{full_namespace}", False)
                 self._LOGGER.error(f'Invalid namespace \'{full_namespace}')
                 return False
             if method:
                 if method not in self._namespaces[namespace].keys():
+                    self._set_response(-20, f'\'{method}\' is not valid method\' for namespace \'{namespace}\'', False)
                     self._LOGGER.error(f'\'{method}\' is not valid method\' for namespace \'{namespace}\'')
                     return False
             else:
@@ -362,6 +365,7 @@ class KodiObj():
 
             param_template = self._namespaces[namespace][method]
             if param_template['description'] == "NOT IMPLEMENTED.":
+                self._set_response(-30,f'{full_namespace} has not been implemented',False)
                 self._LOGGER.error(f'{full_namespace} has not been implemented')
                 return False
 
@@ -387,7 +391,10 @@ class KodiObj():
                 parm_value = parm_entry.get('default', None)
             if parm_value is not None:
                 self._LOGGER.log(logging.TRACE, f'    Key    : {parm_name:15}  Value: {parm_value}')
-                req_parms[parm_name] = parm_value
+                if isinstance(parm_value, int):
+                    req_parms[parm_name] = int(parm_value)
+                else:
+                    req_parms[parm_name] = parm_value
             else:
                 self._LOGGER.log(logging.TRACE, f'    Key    : {parm_name:15}  Value: {parm_value} BYPASS')
         self._LOGGER.log(logging.TRACE, '')
