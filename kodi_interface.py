@@ -4,8 +4,7 @@ import logging
 import os
 import pathlib
 import socket
-from sqlite3 import Row
-
+import time
 import requests
 
 # TODO:
@@ -318,7 +317,10 @@ class KodiObj():
         self._kodi_references = self._load_kodi_json_def(json_dict_loc)
 
         kodi_version_loc = this_path / pathlib.Path(json_loc) / "version.txt"
-        self._kodi_api_version = kodi_version_loc.read_text().replace('\n','')
+        if kodi_version_loc.exists():
+            self._kodi_api_version = kodi_version_loc.read_text().replace('\n','')
+        else:
+            self._kodi_api_version = "Unknown"
         self._LOGGER.debug(f'  Kodi RPC Version: {self._kodi_api_version}')
         
         if self._LOGGER.getEffectiveLevel() == logging.DEBUG:
@@ -545,10 +547,10 @@ class KodiObj():
         self.response_status_code = code
         self.response_text = text
         self.request_success = success
-        self._LOGGER.log(logging.TRACE, '  Response -')
-        self._LOGGER.log(logging.TRACE, f'    status_code: {code}')
-        self._LOGGER.log(logging.TRACE, f'    resp_test  : {text}')
-        self._LOGGER.log(logging.TRACE, f'    success    : {success}')
+        self._LOGGER.log(logging.DEBUG, '  Response -')
+        self._LOGGER.log(logging.DEBUG, f'    status_code: {code}')
+        self._LOGGER.log(logging.DEBUG, f'    resp_test  : {text}')
+        self._LOGGER.log(logging.DEBUG, f'    success    : {success}')
 
     def _call_kodi(self, method: str, params: dict = {}) -> bool:
         self._clear_response()
@@ -569,12 +571,17 @@ class KodiObj():
                                     auth=(self._userid, self._password),
                                     data=json.dumps(payload),
                                     headers=headers, timeout=(5,3)) # connect, read
-                resp_json = json.loads(resp.text)
-                if 'error' in resp_json.keys():
-                    self._set_response(resp_json['error']['code'], resp.text, True)
+
+                if resp.status_code == 200:
+                    resp_json = json.loads(resp.text)
+                    if 'error' in resp_json.keys():
+                        self._set_response(resp_json['error']['code'], resp.text, True)
+                    else:
+                        self._set_response(0, resp.text, True)
+                    success = True
                 else:
-                    self._set_response(0, resp.text, True)
-                success = True
+                    retry = MAX_RETRY
+                    resp.raise_for_status()
             except requests.RequestException as re:
                 self._LOGGER.debug(repr(re))
                 retry = MAX_RETRY + 1
