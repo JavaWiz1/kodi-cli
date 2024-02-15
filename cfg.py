@@ -41,7 +41,8 @@ def _get_version_from_mod_time() -> str:
 def resolve_config_location(file_name: str) -> str:
     LOGGER.trace(f'Attempting to resolve location for: {file_name}')
     found_location = file_name
-    config_prefixes = ['./config', f'~/.{PACKAGE_NAME}', '../config', '.', '..']
+    first_prefix = pathlib.Path(file_name).parent
+    config_prefixes = [first_prefix, './config', '../config', '.', '..', f'~/.{PACKAGE_NAME}']
     for prefix in config_prefixes:
         file_loc = pathlib.Path(f'{prefix}/{file_name}').expanduser().absolute()
         LOGGER.trace(f'- {file_loc}')
@@ -49,7 +50,8 @@ def resolve_config_location(file_name: str) -> str:
             found_location = str(file_loc.absolute())
             LOGGER.trace(f'  - FOUND: {found_location}')
             break
-
+    # Default to found location (or last entry i.e. ~/.kodi_cli/kodi_.cfg)
+    found_location = file_loc.absolute()
     return found_location
 
 def get_host_info() -> dict:
@@ -95,16 +97,16 @@ def _config_notes_block() -> List[str]:
 
 def create_template_config(overwrite: bool = False):
     this_module = sys.modules[__name__]
-
-    filename = pathlib.Path(f'./config/{PACKAGE_NAME}.cfg').absolute()
+    filename = pathlib.Path(resolve_config_location(f'{PACKAGE_NAME}.cfg')).absolute()
+    # filename = pathlib.Path(f'./config/{PACKAGE_NAME}.cfg').absolute()
+    LOGGER.trace(f'Config location identified as: {filename}')
     if not filename.parent.exists():  
         LOGGER.info(f'Creating directory: {filename.parent}')
         filename.parent.mkdir()
-    if filename.exists() and not overwrite:
-        #raise FileExistsError(filename)
-        filename = pathlib.Path(f'./config/{PACKAGE_NAME}_NEW.cfg').absolute()
+    if filename.exists():
+        if not overwrite:
+            raise FileExistsError(f'{filename}, to overwrite, use -CO option')
         
-    # new_config = configparser.ConfigParser(interpolation=None)
     new_config = configparser.ConfigParser()
     for keyword in _KEYWORD_SECTIONS.keys():
         section, _ = _get_section_desc(keyword)
@@ -122,6 +124,8 @@ def create_template_config(overwrite: bool = False):
     LOGGER.info('')
     LOGGER.info(f'Config file [{filename}] created/updated.')
     LOGGER.info(' - Values are current settings (or default setting if not defined)')
+    if '_NEW' in str(filename):
+        LOGGER.warning(' - You must rename the file (to kodi_cli.cfg) for changes to take effect')
     LOGGER.info('')
 
 
@@ -159,7 +163,6 @@ def configure_logger(log_target = sys.stderr, log_level: str = "INFO", log_forma
     
 # == Config Settings =====================================================================
 FILE_CONFIG = resolve_config_location(f'{PACKAGE_NAME}.cfg')
-# FILE_SECRETS = resolve_config_location(f'{PACKAGE_NAME}_secrets.cfg')
 
 CONFIG_EXISTS = pathlib.Path(FILE_CONFIG).exists()
 _CONFIG = configparser.ConfigParser()
@@ -185,16 +188,17 @@ _KEYWORD_SECTIONS = {
 # ===================================================================================================================
 __version__ = get_version()
 
-DEFAULT_FILE_LOGFMT = "<green>{time:MM/DD/YY HH:mm:ss}</green> |<level>{level: <8}</level>|<cyan>{name:22}</cyan>|<cyan>{line:3}</cyan>| <level>{message}</level>"
+DEFAULT_FILE_LOGFMT = "<green>{time:MM/DD/YY HH:mm:ss}</green> |<level>{level: <8}</level>|<cyan>{name:12}</cyan>|<cyan>{line:3}</cyan>| <level>{message}</level>"
 DEFAULT_CONSOLE_LOGFMT = "<level>{message}</level>"
-DEBUG_CONSOLE_LOGFMT = "[<level>{level: <8}</level>] <cyan>{name:24}</cyan>[<cyan>{line:3}</cyan>] <level>{message}</level>"
+DEBUG_CONSOLE_LOGFMT = "[<level>{level: <8}</level>] <cyan>{name:15}</cyan>[<cyan>{line:3}</cyan>] <level>{message}</level>"
 
-logging_enabled: str    = _CONFIG.getboolean(_get_section_desc('logging_enabled')[0], 'logging_enabled', fallback=True)
-logging_filename: str   = _CONFIG.get(_get_section_desc('logging_filename')[0],       'logging_filename', fallback=f'./logs/{PACKAGE_NAME}.log')
-logging_rotation: str   = _CONFIG.get(_get_section_desc('logging_rotation')[0],       'logging_rotation', fallback='15 MB')
+logging_enabled: str    = _CONFIG.getboolean(_get_section_desc('logging_enabled')[0], 'logging_enabled', fallback=False)
+_default_log_name = resolve_config_location(f'{PACKAGE_NAME}.log')
+logging_filename: str   = _CONFIG.get(_get_section_desc('logging_filename')[0],       'logging_filename', fallback=_default_log_name)
+logging_rotation: str   = _CONFIG.get(_get_section_desc('logging_rotation')[0],       'logging_rotation', fallback='1 MB')
 logging_retention: int  = _CONFIG.getint(_get_section_desc('logging_retention')[0],   'logging_retention', fallback=3)
 logging_level: str      = _CONFIG.get(_get_section_desc('logging_level')[0],          'logging_level',    fallback='INFO')
-logger_blacklist: str   = _CONFIG.get(_get_section_desc('logger_blacklist')[0],       'logger_blacklist', fallback='plugins.disk_source,PIL.TiffImagePlugin')
+logger_blacklist: str   = _CONFIG.get(_get_section_desc('logger_blacklist')[0],       'logger_blacklist', fallback='')
 
 host: str               = _CONFIG.get(_get_section_desc('host')[0], 'host', fallback='localhost')
 port: int               = _CONFIG.getint(_get_section_desc('port')[0], 'port', fallback=8080)
@@ -205,19 +209,3 @@ kodi_pw: str            =_CONFIG.get(_get_section_desc('kodi_pw')[0], 'kodi_pw',
 format_output: bool     =_CONFIG.getboolean(_get_section_desc('format_output')[0], 'format_output', fallback=False)
 csv_output: bool        =_CONFIG.getboolean(_get_section_desc('csv_output')[0],    'csv_output', fallback=False)
 _json_rpc_loc: str      = _CONFIG.get(section='SERVER', option='_json_rpc_loc', fallback='./json-defs')
-
-
-# default_cfg_dict = {
-#                 "host": "localhost", 
-#                 "port": 8080,
-#                 "user": "kodiuser",
-#                 "password": "kodipassword",
-#                 "format_output": False,
-#                 "csv_output": False,
-#                 "json_rpc_loc": "./json-defs",
-#                 "log_format": f"{DFLT_LOG_FORMAT}",
-#                 "log_level": DFLT_LOG_LEVEL
-
-#     }
-
-

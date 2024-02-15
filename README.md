@@ -65,7 +65,7 @@ When defining an object type parameter, create it as a pseudo dictionary as belo
 ```
 usage: kodi-cli [-h] [-H HOST] [-P PORT] [-u USER] [-p PASSWORD] [-C] [-f] [-v] [-i] [command [parameter ...]]
 
-Kodi CLI controller v0.1.7
+Kodi CLI controller v0.2.1
 
 positional arguments:
   command                   RPC command namespace.method (help namespace to list)
@@ -74,11 +74,15 @@ optional arguments:
   -h, --help            show this help message and exit
   -H HOST, --host HOST  Kodi hostname
   -P PORT, --port PORT  Kodi RPC listen port
-  -u USER, --user USER  Kodi authenticaetion username
-  -p PASSWORD, --password PASSWORD
+  -u USER, --kodi-user USER  
+                        Kodi authenticaetion username
+  -p PASSWORD, --kodi-password PASSWORD
                         Kodi autentication password
   -C, --create_config   Create empty config
+  -CO, --create_config_overwrite
+                        Create default config, overwrite if exists
   -f, --format_output   Format json output
+  -c, --csv-output      Format csv output (only specific commands)
   -v, --verbose         Verbose output, -v = INFO, -vv = DEBUG
   -i, --info            display program info and quit
 ```
@@ -91,7 +95,7 @@ optional arguments:
 | enter help | as a parameter for help on namespace or namespace.method or namespace.type <br>add -v to get json defintion|
 | add -i | to output runtime and program information |
 | add -f | to format the json output into a friendly format |
-| add -c | to create a config file with runtime defaults (see "Create config file to store defaults" below)|
+| add -C or (-CO) | to create a config file with runtime defaults (see "Create config file to store defaults" below)|
 </br>
 
 **Help commands:**
@@ -132,22 +136,40 @@ Code can be installed via pip or pipx:
 To minimize command-line entry, you can store defaults in a config file which will default values on startup.  The
 values can be over-ridded at run-time by providing the optional command-line argument.
 
-To create a default config file, type your standard defaults as if you were going to execute the CLI and add -C at the end.
+To create a default config file, type your standard defaults as if you were going to execute the CLI and add -C (or -CO)
+at the end.
 The config file will be written with the values.
 ```
 SYNTAX:
   kodi-cli -u myId -p myPassword -P 8080 -C
 
 OUTPUT:
-  a file (kodi_cli.cfg will be written as:
-    {
-      "host": "localhost",
-      "port": 8080,
-      "user": "myId",
-      "password": "myPassword",
-      "format_output": false
-    }
+  a file kodi_cli.cfg will be written as:
+...
+[LOGGING]
+logging_enabled = False
+logging_filename = ./logs/kodi_cli.log
+logging_rotation = 1 MB
+logging_retention = 3
+logging_level = INFO
+logger_blacklist = 
+
+[SERVER]
+host = localhost
+port = 8080
+
+[LOGIN]
+kodi_user = kodi
+kodi_pw = kodi
+
+[OUTPUT]
+format_output = False
+csv_output = False
 ```
+NOTE:
+- if current file does not exist, it will be created as ~/.kodi_cli/kodi_cli.cfg
+- if current file does exist error will be thrown unless -CO option is used.
+- user and password is stored in clear text
 </br></br>
 
 ---

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kodi-cli"
-version = "0.2.0"
+version = "0.2.1"
 description = "Control your Kodi instance(s) via the commandline"
 authors = ["Al DAmico <JavaWiz1@hotmail.com>"]
 readme = "README.md"

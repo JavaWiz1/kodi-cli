@@ -146,7 +146,7 @@ def display_script_help(usage: str):
     print('Commands are based on Kodi namespaces and methods for each namespace.  When executing a command')
     print('you supply the namespace, the method and any parameters (if required).\n')
     print('For example, to display the mute and volume level settings on host kodi001, type:\n')
-    print('  python kodi_cli.py -H kodi001 Application.GetProperties properties=[muted,volume]\n')
+    print('  kodi_cli -H kodi001 Application.GetProperties properties=[muted,volume]\n')
     print('TIPS - When calling the script')
     print(' - add -h to display script syntax and list of option parameters')
     print(' - enter HELP as the command for a list of available commands (namespaces)')
@@ -156,9 +156,9 @@ def display_script_help(usage: str):
     print('  - Append a -C to the end of the commandline, the file will be created (if it does not already exist)')
     print('  - Any future runs will use the defaults, which can be overridden if needed.\n')
     print('Help commands')
-    print('  - list of namespaces:    python kodi_cli.py Help')
-    print('  - Methods for Namespace: python kodi_cli.py Help Application')
-    print('  - Parameters for Method: python kodi_cli.py Help Application.GetProperties\n')
+    print('  - list of namespaces:    kodi_cli Help')
+    print('  - Methods for Namespace: kodi_cli Help Application')
+    print('  - Parameters for Method: kodi_cli Help Application.GetProperties\n')
     print('Details for namespaces, methods and parameters may be found at https://kodi.wiki/view/JSON-RPC_API/v12')
 
 
@@ -251,9 +251,10 @@ def main() -> int:
     parser.add_argument("-P","--port", type=int, default=cfg.port,help="Kodi RPC listen port")
     parser.add_argument("-u","--kodi-user", type=str, default=cfg.kodi_user,help="Kodi authenticaetion username")
     parser.add_argument("-p","--kodi_pw", type=str, default=cfg.kodi_pw,help="Kodi autentication password")
-    parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
+    parser.add_argument('-C','--create_config', action='store_true', help='Create default config')
+    parser.add_argument('-CO','--create_config_overwrite', action='store_true', help='Create default config, overwrite if exists')
     parser.add_argument("-f","--format_output", action="store_true", default=cfg.format_output,help="Format json output")
-    parser.add_argument('-c',"--csv-output", action="store_true", default=cfg.csv_output,help="Format csv output (only specific commands")    
+    parser.add_argument('-c',"--csv-output", action="store_true", default=cfg.csv_output,help="Format csv output (only specific commands)")    
     parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = TRACE, -vvv DEBUG")
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
@@ -265,11 +266,18 @@ def main() -> int:
             LOGGER.debug(f'CmdLine Override: {key}: {val}')
             setattr(cfg, key, val)
 
-    if args.create_config:
+    if args.create_config or args.create_config_overwrite:
         # create_config(args)
-        cfg.create_template_config()
-        return 0
-
+        try:
+            if args.create_config_overwrite:
+                cfg.create_template_config(overwrite=True)
+            else:
+                cfg.create_template_config(overwrite=False)
+            return 0
+        except Exception as ex:
+            LOGGER.critical(repr(ex))
+            return -1
+        
     if args.info:
         display_program_info()
         # dump_args(args_dict)

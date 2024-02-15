@@ -1,3 +1,8 @@
+# 0.2.1 02/15/2024
+- Switched to loguru for logging
+- changed how config works, default location is ~/.kodi_cli/kodi_cli.cfg
+- location of the log file will be in same directory as config (~/.kodi_cli)
+
 # 0.1.9 10/24/2023
 - Fix bug for locating json definition files
 - Fix bug for handling boolean input parameters
