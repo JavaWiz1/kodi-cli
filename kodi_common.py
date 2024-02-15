@@ -1,17 +1,3 @@
-# import logging
-
-# # === Logging variables and routines
-# logging.TRACE = logging.DEBUG + 5
-# DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
-# DFLT_LOG_LEVEL = logging.ERROR
-
-# def setup_logging(settings_dict: dict):
-#     # TODO: Externalize logging settings 
-#     lg_format=settings_dict.get('log_format', DFLT_LOG_FORMAT)
-#     lg_level = settings_dict.get('log_level', DFLT_LOG_LEVEL)
-#     # logging.TRACE = logging.DEBUG + 5
-#     logging.basicConfig(format=lg_format, level=lg_level,)
-
 # === Validation routines =================================================
 def is_integer(token: str) -> bool:
     """Return true if string is an integer"""

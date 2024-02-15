@@ -1,11 +1,7 @@
-
-import logging
+from loguru import logger as LOGGER
 import sys
 
 from kodi_interface import KodiObj
-
-LOGGING = logging.getLogger(__name__)
-
 
     
 def get_input(prompt: str = "> ", choices: list = [], required = False) -> str:
@@ -21,18 +17,18 @@ def get_input(prompt: str = "> ", choices: list = [], required = False) -> str:
 
     return ret_val
 
-def setup_logging(log_level = logging.ERROR):
-    lg_format='[%(levelname)-5s] %(message)s'
-    logging.basicConfig(format=lg_format, level=log_level,)
+# def setup_logging(log_level = logging.ERROR):
+#     lg_format='[%(levelname)-5s] %(message)s'
+#     logging.basicConfig(format=lg_format, level=log_level,)
 
-def set_loglevel(log_level:str):
-    if log_level == "E":
-        lg_lvl = logging.ERROR
-    elif log_level == "I":
-        lg_lvl = logging.INFO
-    else:
-        lg_lvl = logging.DEBUG
-    logging.getLogger().setLevel(lg_lvl)
+# def set_loglevel(log_level:str):
+#     if log_level == "E":
+#         lg_lvl = logging.ERROR
+#     elif log_level == "I":
+#         lg_lvl = logging.INFO
+#     else:
+#         lg_lvl = logging.DEBUG
+#     logging.getLogger().setLevel(lg_lvl)
 
 def dump_methods(kodi: KodiObj):
     namespaces = kodi.get_namespace_list()
@@ -45,7 +41,8 @@ def dump_methods(kodi: KodiObj):
             for method in ns_methods:
                 resp = get_input(f'{ns}.{method} (E,I,D,n,q)> ',['E','I','D','y','n','q',''])
                 if resp in ['E','I','D']:
-                    set_loglevel(resp)
+                    # set_loglevel(resp)
+                    pass
                 elif resp == 'q':
                     sys.exit()
                 elif resp == 'n':
@@ -57,9 +54,9 @@ def dump_methods(kodi: KodiObj):
                 print('\n=========================================================================')
 
 def main():
-    setup_logging()
+    # setup_logging()
     log_level = "E"
-    set_loglevel(log_level)
+    # set_loglevel(log_level)
 
     kodi = KodiObj()
     # kodi.help("")

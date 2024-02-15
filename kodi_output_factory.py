@@ -9,7 +9,6 @@
 # Python program to convert
 # JSON file to CSV
  
- 
 import json
 import csv
 import sys

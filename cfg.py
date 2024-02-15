@@ -1,9 +1,10 @@
-from typing import List, Tuple
 import configparser
 import pathlib
+import platform
 import sys
 from datetime import datetime as dt
 from importlib.metadata import version
+from typing import List, Tuple
 
 from loguru import logger as LOGGER
 
@@ -50,6 +51,23 @@ def resolve_config_location(file_name: str) -> str:
             break
 
     return found_location
+
+def get_host_info() -> dict:
+    """
+    Return dictionary of host info:
+    - name
+    - Processor
+    - OS Release, Type and Version
+    - Python version
+    """
+    host_info = {}
+    host_info['Hostname'] = platform.node()
+    host_info['Processor'] = platform.processor()
+    host_info['Release'] = platform.release()
+    host_info['OS Type'] = platform.system()
+    host_info['OS Version'] = platform.version()
+    host_info['Python'] = platform.python_version()
+    return host_info
 
 # -- Config file routines ------------------------------------------------------------------------------
 def _get_section_desc(key: str) -> Tuple[str, str]:
@@ -168,7 +186,7 @@ _KEYWORD_SECTIONS = {
 __version__ = get_version()
 
 DEFAULT_FILE_LOGFMT = "<green>{time:MM/DD/YY HH:mm:ss}</green> |<level>{level: <8}</level>|<cyan>{name:22}</cyan>|<cyan>{line:3}</cyan>| <level>{message}</level>"
-DEFAULT_CONSOLE_LOGFMT = "[<level>{level: <8}</level>] <level>{message}</level>"
+DEFAULT_CONSOLE_LOGFMT = "<level>{message}</level>"
 DEBUG_CONSOLE_LOGFMT = "[<level>{level: <8}</level>] <cyan>{name:24}</cyan>[<cyan>{line:3}</cyan>] <level>{message}</level>"
 
 logging_enabled: str    = _CONFIG.getboolean(_get_section_desc('logging_enabled')[0], 'logging_enabled', fallback=True)
