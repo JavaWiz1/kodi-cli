@@ -1,17 +1,17 @@
 import argparse
-# import csv
-# import importlib
 import json
-import logging
 import os
 import pathlib
 import sys
 import textwrap
 from typing import Tuple
+import cfg
+
+from loguru import logger as LOGGER
 
 import kodi_common as util
 import kodi_output_factory as output_factory
-import version as ver_info
+import version_NOTUSED as ver_info
 from kodi_interface import KodiObj
 
 # CSV_CAPABLE_COMMANDS =  {
@@ -27,11 +27,7 @@ from kodi_interface import KodiObj
 #     }
     
 
-LOGGER = logging.getLogger('kodi-cli')
-DFLT_LOG_FORMAT = "[%(levelname)-5s] %(message)s"
-DFLT_LOG_LEVEL = logging.ERROR
-
-__version__ = ver_info.get_version("kodi-cli")
+__version__ = cfg.get_version()
 
 # # === Validation routines =================================================
 # def is_integer(token: str) -> bool:
@@ -145,67 +141,31 @@ def parse_input(args: list) -> Tuple[str, str, str, dict]:
 
 
 # === Config file routines ========================================================================
-def create_config(args) -> bool:
-    """Create config dictionary based on config file and command-line parameters"""
-    this_path = pathlib.Path(__file__).absolute().parent
-    cfg_file = this_path / "kodi_cli.cfg"
-    if cfg_file.exists():
-        print('ERROR- request to create config file, but it already exists.  Rename or delete.')
-        print(f'       {cfg_file}')
-        return False
+# def create_config(args) -> bool:
+#     """Create config dictionary based on config file and command-line parameters"""
+#     this_path = pathlib.Path(__file__).absolute().parent
+#     cfg_file = this_path / "kodi_cli.cfg"
+#     if cfg_file.exists():
+#         print('ERROR- request to create config file, but it already exists.  Rename or delete.')
+#         print(f'       {cfg_file}')
+#         return False
 
-    cfg_dict = get_configfile_defaults(args)
-    # Remove keys we don't want in the config
-    for key in ['config', 'create_config', 'command', '__version__']:
-        try:
-            cfg_dict.pop(key)
-        except KeyError:
-            pass
-    # Remove keys that don't have a value
-    cfg_dict = {key:val for key, val in cfg_dict.items() if val is not None}
-    # Convert to json format and save
-    cfg_json = json.dumps(cfg_dict, indent=2)
-    with open(cfg_file,"w")as cfg_fh:
-        cfg_fh.write(cfg_json)
+#     cfg_dict = get_configfile_defaults(args)
+#     # Remove keys we don't want in the config
+#     for key in ['config', 'create_config', 'command', '__version__']:
+#         try:
+#             cfg_dict.pop(key)
+#         except KeyError:
+#             pass
+#     # Remove keys that don't have a value
+#     cfg_dict = {key:val for key, val in cfg_dict.items() if val is not None}
+#     # Convert to json format and save
+#     cfg_json = json.dumps(cfg_dict, indent=2)
+#     with open(cfg_file,"w")as cfg_fh:
+#         cfg_fh.write(cfg_json)
 
-    print(f'{cfg_file} created.')
-    return True
-
-def get_configfile_defaults(cmdline_args: dict = None) -> dict:
-    """Get configfile defaults.  Optionally, apply command-line over-rides"""
-    # if cfg file exists, us it, otherwise hard-coded defaults
-    default_cfg_dict = {
-                "host": "localhost", 
-                "port": 8080,
-                "user": "kodiuser",
-                "password": "kodipassword",
-                "format_output": False,
-                "csv_output": False,
-                "json_rpc_loc": "./json-defs",
-                "log_format": f"{DFLT_LOG_FORMAT}",
-                "log_level": DFLT_LOG_LEVEL
-    }
-
-    this_path = pathlib.Path(__file__).absolute().parent
-    cfg_file = this_path / "kodi_cli.cfg"
-    final_dict = {}
-    try:
-        # Use the config file
-        with open(cfg_file, "r") as cfg_fh:
-            cfg_dict = json.load(cfg_fh)   
-    except FileNotFoundError:
-        cfg_dict = {}
-
-    final_dict = {**default_cfg_dict, **cfg_dict}    
-    #  Over-ride with command-line parms
-    if cmdline_args:
-        for entry in cmdline_args._get_kwargs():
-            if entry[1]:
-                final_dict[entry[0]] = entry[1]
-    # add version
-    final_dict["__version__"] = __version__
-
-    return final_dict
+#     print(f'{cfg_file} created.')
+#     return True
 
 # === Intro help page ================================================================================
 def display_script_help(usage: str):
@@ -234,7 +194,8 @@ def display_script_help(usage: str):
 
 # === Misc. routines =================================================================================
 def setup_logging(settings_dict: dict):
-    # TODO: Externalize logging settings 
+    # TODO: Externalize logging settings
+    import logging
     lg_format=settings_dict['log_format']
     lg_level = settings_dict['log_level']
     # logging.TRACE = logging.DEBUG + 5
@@ -257,7 +218,7 @@ def dump_args(args):
 
 def display_program_info():
     kodi = KodiObj()
-    LOGGER.setLevel(logging.DEBUG)
+    # LOGGER.setLevel(logging.DEBUG)
     this_path = pathlib.Path(__file__).absolute().parent
 
     LOGGER.debug('Calling Info-')
@@ -272,9 +233,40 @@ def display_program_info():
     LOGGER.debug(f'  API version  : {kodi._kodi_api_version}')
     LOGGER.debug('')
 
+def initialize_loggers(args: argparse.Namespace):
+    log_filename = pathlib.Path(cfg.logging_filename) # pathlib.Path('./logs/da-photo.log')
+
+    log_level = cfg.logging_level
+    if args.verbose:
+        if args.verbose == 1:
+            log_level = 'INFO'
+        elif args.verbose == 2:
+            log_level = 'DEBUG'
+        elif args.verbose > 2:
+            log_level = 'TRACE' 
+        
+    if log_level.upper() == 'INFO':
+        console_format = cfg.DEFAULT_CONSOLE_LOGFMT
+    else:
+        console_format = cfg.DEBUG_CONSOLE_LOGFMT
+
+    c_handle = cfg.configure_logger(log_format=console_format, log_level=log_level)
+    f_handle = -1
+    if cfg.logging_enabled:
+        f_handle = cfg.configure_logger(log_filename, log_format=cfg.DEFAULT_FILE_LOGFMT, log_level=log_level,
+                                       rotation=cfg.logging_rotation, retention=cfg.logging_retention)
+        
+    # Hack for future ability to dynamically change logging levels
+    LOGGER.c_handle = c_handle
+    LOGGER.f_handle = f_handle
+
+    if len(cfg.logger_blacklist.strip()) > 0: 
+        for logger_name in cfg.logger_blacklist.split(','):
+            LOGGER.disable(logger_name)
+
+
 # ==== Main script body =================================================================================
 def main() -> int:
-    default = get_configfile_defaults()
     parser = argparse.ArgumentParser(description=f'Kodi CLI controller  v{__version__}')
     parser.formatter_class = argparse.RawDescriptionHelpFormatter
     parser.description = textwrap.dedent('''\
@@ -284,55 +276,47 @@ def main() -> int:
         example - Retrieve list of 5 addons:
             kodi-cli -H myHost Addons.GetAddons properties=[name,version,summary] limits={start:0,end:5}
         ''')
-    parser.add_argument("-H","--host", type=str, default=default['host'], help="Kodi hostname")
-    parser.add_argument("-P","--port", type=int, default=default['port'],help="Kodi RPC listen port")
-    parser.add_argument("-u","--user", type=str, default=default['user'],help="Kodi authenticaetion username")
-    parser.add_argument("-p","--password", type=str, default=default['password'],help="Kodi autentication password")
+    parser.add_argument("-H","--host", type=str, default=cfg.host, help="Kodi hostname")
+    parser.add_argument("-P","--port", type=int, default=cfg.port,help="Kodi RPC listen port")
+    parser.add_argument("-u","--user", type=str, default=cfg.kodi_user,help="Kodi authenticaetion username")
+    parser.add_argument("-p","--password", type=str, default=cfg.kodi_pw,help="Kodi autentication password")
     parser.add_argument('-C','--create_config', action='store_true', help='Create empty config')
-    parser.add_argument("-f","--format_output", action="store_true", default=default['format_output'],help="Format json output")
-    parser.add_argument('-c',"--csv", action="store_true", default=default['csv_output'],help="Format csv output (only specific commands")    
+    parser.add_argument("-f","--format_output", action="store_true", default=cfg.format_output,help="Format json output")
+    parser.add_argument('-c',"--csv", action="store_true", default=cfg.csv_output,help="Format csv output (only specific commands")    
     parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = TRACE, -vvv DEBUG")
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
     
-    # print(f'** args: {args.command}')
-
     if args.create_config:
-        create_config(args)
+        # create_config(args)
+        cfg.create_template_config()
         return 0
 
-    # Create args/settings dict from cmdline and config file
-    args_dict = get_configfile_defaults(args)
-    
-    loglvl = default['log_level']
-    logging.TRACE = logging.DEBUG + 5
+    loglvl = cfg.logging_level
     if args.verbose:
         # Command line over-ride
         if args.verbose == 1:
-            loglvl = logging.INFO
+            loglvl = "INFO"
         elif args.verbose == 2:
-            loglvl=logging.TRACE
+            loglvl="DEBUG"
         elif args.verbose > 2:
-            loglvl = logging.DEBUG
+            loglvl = "TRACE"
+    cfg.logging_level = loglvl
 
-    if loglvl != args_dict['log_level']:
-        # print(f'log level over-ride, from: {args_dict["log_level"]} to {loglvl}')
-        args_dict['log_level'] = loglvl
-
-    setup_logging(args_dict)
+    initialize_loggers(args)
     if args.info:
         display_program_info()
-        dump_args(args_dict)
+        # dump_args(args_dict)
         return 0
 
     if not args.command:
         display_script_help(parser.format_usage())
         return -1  # missing arguments
 
-    kodi = KodiObj(args_dict['host'], args_dict['port'], args_dict['user'], args_dict['password'], args_dict['json_rpc_loc'])
-    if loglvl < logging.ERROR:
-        dump_args(args_dict)
+    kodi = KodiObj(cfg.host, cfg.port, cfg.kodi_user, cfg.kodi_pw, cfg._json_rpc_loc)
+    # if loglvl < logging.ERROR:
+    #     dump_args(args_dict)
 
     # Process command-line input
     reference, namespace, method, param_dict = parse_input(args.command)
@@ -359,13 +343,13 @@ def main() -> int:
 
     kodi.send_request(namespace, method, param_dict)
     response = kodi.response_text
-    if args.csv and method_sig in kodi.CSV_CAPABLE_COMMANDS.keys():
+    if cfg.csv and method_sig in kodi.CSV_CAPABLE_COMMANDS.keys():
         json_node = kodi.CSV_CAPABLE_COMMANDS[method_sig]
         output_obj = factory.create("CSV", response_text=response, list_key=json_node)
     else:
-        if args.csv:
+        if cfg.csv:
             LOGGER.info('csv option is not available for this command...')
-        if args.format_output:
+        if cfg.format_output:
             pretty = True
         else:
             pretty = False

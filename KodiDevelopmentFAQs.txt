@@ -1,0 +1,37 @@
+General info:   https://github.com/xbmc/repo-scripts/blob/master/CONTRIBUTING.md
+Create fork:    https://github.com/xbmc/repo-scripts/fork/
+                https://github.com/xbmc/repo-plugins/fork/
+Config remote:  https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/working-with-forks/configuring-a-remote-for-a-fork 
+
+
+
+
+
+=================================================================================================
+Config remote
+    # Show current origin
+    git remote -v
+    # specify upstream
+    git remote add upstream https://github.com/xbmc/repo-scripts or repo-plugins
+    # Show remotes
+    git remote -v
+=================================================================================================
+Clone
+    git clone git@github.com:javawiz1/repo-scripts.git repo-scripts
+    cd repo-scripts
+    git remote add upstream https://github.com/xbmc/repo-scripts.git
+
+    git clone git@github.com:javawiz1/repo-plugins.git repo-plugins
+    cd repo-scripts
+    git remote add upstream https://github.com/xbmc/repo-scripts.git
+
+=================================================================================================
+Refresh
+    git fetch upstream
+    git checkout <matrix|master|...>
+    git merge upstream/<branch from above>
+
+Start Changes
+    git checkout -b scripts.
+
+

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "kodi-cli"
-version = "0.1.10"
+version = "0.1.11"
 description = "Control your Kodi instance(s) via the commandline"
 authors = ["Al DAmico <JavaWiz1@hotmail.com>"]
 readme = "README.md"
@@ -17,6 +17,7 @@ include = ["json-defs/*", "CHANGELOG.md", "*.py"]
 [tool.poetry.dependencies]
 python = "^3.7"
 requests = "^2.28.0"
+loguru = "^0.7.2"
 
 [tool.poetry.dev-dependencies]
 

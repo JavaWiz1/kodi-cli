@@ -1,11 +1,10 @@
 from kodi_interface import KodiObj
 import kodi_common as util
-import logging
 from typing import Any,List,Tuple
 import json
 import pathlib
+from loguru import logger as LOGGER
 
-LOGGER = logging.getLogger('kodi-library-inventory')
 
 EPISODE_FILE='./episodes.csv'
 MOVIE_FILE='./movies.csv'
@@ -56,7 +55,7 @@ def get_tv_show_episodes(kodi: KodiObj, show_name: str, tvshow_id: int, season: 
         for episode in r_json['result']['episodes']:
             episodes.append(episode)
             # print(episode)
-        LOGGER.log(logging.TRACE,f'  {len(episodes)} loaded.')
+        LOGGER.trace(f'  {len(episodes)} loaded.')
     return episodes
 
 def get_movies(kodi: KodiObj) -> list:
@@ -96,7 +95,6 @@ def create_csv(file_nm: str, entries: list) -> bool:
             csv_out.write(f'{detail_line}\n')
 
 def main():
-    util.setup_logging({'log_level': logging.INFO})
     kodi = KodiObj("LibreElec7")
 
     # episodes = list()
