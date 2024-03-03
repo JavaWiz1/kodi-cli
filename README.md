@@ -119,10 +119,11 @@ Details for namespaces, methods and type parameters may be found at https://kodi
 **Python 3.7+**<br>
 **Python packages**
 - requests package
+- loguru
 <br>
-Code can be installed via pip or pipx:
+Code can be installed via pip or [pipx](https://github.com/pypa/pipx):
 - pip install kodi-cli [--user]
-- pipx install kodi-cli
+- [pipx](https://github.com/pypa/pipx) install kodi-cli
 
 **Kodi configuration**
 - Remote control via HTTP must be enabled.

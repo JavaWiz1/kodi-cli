@@ -191,13 +191,16 @@ def display_program_info():
     # LOGGER.setLevel(logging.DEBUG)
     this_path = pathlib.Path(__file__).absolute().parent
 
-    LOGGER.info('Calling Info-')
+    LOGGER.success('Calling Info-')
     LOGGER.info(f'  Command Line : {" ".join(sys.argv)}')
     LOGGER.info(f'  Current dir  : {os.getcwd()}')
     LOGGER.info(f'  Current root : {this_path}')
+    LOGGER.success('Program Info-')
     LOGGER.info(f'  Version      : {cfg.__version__}')
-    LOGGER.info('')
-    LOGGER.info('Host Info-')
+    LOGGER.info(f'  Installed at : {this_path}')
+    exists = 'exists' if cfg.CONFIG_EXISTS else 'does not exist'
+    LOGGER.info(f'  Config       : {cfg.FILE_CONFIG}  [{exists}]')
+    LOGGER.success('Host Info-')
     host_info = cfg.get_host_info()
     for k,v in host_info.items():
         LOGGER.info(f'  {k:13}: {v}')
