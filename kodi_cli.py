@@ -211,13 +211,13 @@ def initialize_loggers(args: argparse.Namespace):
     log_filename = pathlib.Path(cfg.logging_filename) # pathlib.Path('./logs/da-photo.log')
 
     log_level = cfg.logging_level
-    if args.verbose:
-        if args.verbose == 1:
-            log_level = 'INFO'
-        elif args.verbose == 2:
-            log_level = 'DEBUG'
-        elif args.verbose > 2:
-            log_level = 'TRACE' 
+    # if args.verbose:
+    #     if args.verbose == 1:
+    #         log_level = 'INFO'
+    #     elif args.verbose == 2:
+    #         log_level = 'DEBUG'
+    #     elif args.verbose > 2:
+    #         log_level = 'TRACE' 
         
     if log_level.upper() == 'INFO':
         console_format = cfg.DEFAULT_CONSOLE_LOGFMT
@@ -238,6 +238,20 @@ def initialize_loggers(args: argparse.Namespace):
         for logger_name in cfg.logger_blacklist.split(','):
             LOGGER.disable(logger_name)
 
+def apply_overrides(args: argparse.Namespace):
+    for key, val in args._get_kwargs():
+        cfg_val = getattr(cfg, key, None)
+        if cfg_val is not None and cfg_val != val:
+            LOGGER.debug(f'CmdLine Override: {key}: {val}')
+            setattr(cfg, key, val)
+    
+    if args.verbose:
+        if args.verbose == 1:
+            cfg.logging_level = 'INFO'
+        elif args.verbose == 2:
+            cfg.logging_level = 'DEBUG'
+        elif args.verbose > 2:
+            cfg.logging_level = 'TRACE'
 
 # ==== Main script body =================================================================================
 def main() -> int:
@@ -258,16 +272,13 @@ def main() -> int:
     parser.add_argument('-CO','--create_config_overwrite', action='store_true', help='Create default config, overwrite if exists')
     parser.add_argument("-f","--format_output", action="store_true", default=cfg.format_output,help="Format json output")
     parser.add_argument('-c',"--csv-output", action="store_true", default=cfg.csv_output,help="Format csv output (only specific commands)")    
-    parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = TRACE, -vvv DEBUG")
+    parser.add_argument("-v","--verbose", action='count', help="Verbose output, -v = INFO, -vv = DEBUG, -vvv TRACE")
     parser.add_argument("-i","--info", action='store_true', help='display program info and quit')
     parser.add_argument("command", type=str, nargs='*', help="RPC command  namespace.method (help namespace to list)")
     args = parser.parse_args()
     
+    apply_overrides(args)
     initialize_loggers(args)
-    for key, val in args._get_kwargs():
-        if getattr(cfg, key, None) is not None:
-            LOGGER.debug(f'CmdLine Override: {key}: {val}')
-            setattr(cfg, key, val)
 
     if args.create_config or args.create_config_overwrite:
         # create_config(args)
