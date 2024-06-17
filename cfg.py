@@ -15,8 +15,11 @@ PACKAGE_NAME = "kodi_cli"
 def get_version() -> str:
     try:
         ver = version(PACKAGE_NAME)
-    except:
+    except Exception as ex:
         ver = None
+        LOGGER.debug(f'Unable to retrieve version from package name [{PACKAGE_NAME}]')
+        LOGGER.debug(f'Error: {ex}')
+        
     if ver is None:
         toml = pathlib.Path(resolve_config_location('pyproject.toml'))
         if toml.exists():
@@ -147,8 +150,8 @@ def configure_logger(log_target = sys.stderr, log_level: str = "INFO", log_forma
     """
     try:
         LOGGER.remove(log_handle)
-    except:
-        pass
+    except Exception as ex:
+        LOGGER.trace(f'Unable to remove log handle: {log_handle}  [{ex}]')
     
     if not log_format:
         if isinstance(log_target, str):

@@ -1,4 +1,3 @@
-from loguru import logger as LOGGER
 import sys
 
 from kodi_interface import KodiObj
@@ -7,7 +6,7 @@ from kodi_interface import KodiObj
 def get_input(prompt: str = "> ", choices: list = [], required = False) -> str:
     ret_val = input(prompt)
     if choices:
-        while not ret_val in choices:
+        while ret_val not in choices:
             print(f'Invalid selection. Valid entries: {"/".join(choices)}')
             ret_val = input(prompt)
     elif required:
@@ -55,7 +54,7 @@ def dump_methods(kodi: KodiObj):
 
 def main():
     # setup_logging()
-    log_level = "E"
+    # log_level = "E"
     # set_loglevel(log_level)
 
     kodi = KodiObj()
