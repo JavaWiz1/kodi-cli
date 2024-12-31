@@ -38,7 +38,7 @@ def make_dict_from_string(token: str) -> dict:
     entry_list = text.split(",")
     result_dict = {}
     for entry in entry_list:
-        key_val = entry.split(":")
+        key_val = entry.split(":", 1)
         key = key_val[0].strip()
         value = key_val[1].strip()
         if is_integer(value):

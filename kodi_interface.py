@@ -1,4 +1,3 @@
-import http.client
 import json
 from loguru import logger as LOGGER
 import os
@@ -55,7 +54,6 @@ class HelpParameter():
         self.minimum = self._get_parameter_value(self._parameter_block,'minimum')
         self.properties = self._get_parameter_value(self._parameter_block,'properties')
         self.required = self._get_parameter_value(self._parameter_block,'required')
-        type_token = self._get_parameter_value(self._parameter_block,'type')
         self.types = self._get_types(self._parameter_block)
         self.uniqueItems = self._get_parameter_value(self._parameter_block,'uniqueItems')
         self.reference = self._get_parameter_value(self._parameter_block, '$ref')        
@@ -79,16 +77,15 @@ class HelpParameter():
                 if not self.description:
                     self.description = self._get_parameter_value(ref_block, 'description')
                 r_enums = []
-                if type(r_types) is str:
+                if isinstance(r_types, str):
                     if r_types == "string":
                         r_enums = ref_block.get('enums',[])
                         self.types = self._get_types(ref_block)
                     elif r_types == "boolean":
                         r_enums = ['True','False']
-
-                elif type(r_types) is list:
+                elif isinstance(r_types, list):
                     for r_type in r_types:
-                        if type(r_type) is dict:
+                        if isinstance(r_type) is dict:
                             if r_type.get('enums'):
                                 r_enums.extend(r_type['enums'])
                             elif r_type.get('type') == 'boolean':
@@ -155,7 +152,7 @@ class HelpParameter():
                     LOGGER.trace(f'list Type refinement: {block_dict}')
                     return_type = ""
                     for type_entry in type_token:
-                        if type(type_entry) is str:
+                        if isinstance(type_entry, str):
                             return_type += f'{type_entry},'
                         else:
                             return_type += f'{self._get_types(type_entry)}|'
@@ -498,7 +495,7 @@ class KodiObj():
         HelpParameter()._print_parameter_line("Signature", f'{ns}.{method}({p_names})',)
         # print(f'Signature    : {ns}.{method}({p_names})')
         description = help_json['description']
-        if help_json.get('csv') == True:
+        if help_json.get('csv'):
             description = f'{description} (csv)'
         HelpParameter()._print_parameter_line("Description", description,)
         print(self._help_sep_line())
@@ -610,7 +607,7 @@ class KodiObj():
         name_list = []
         for p_entry in json_param_list:
             parameter_name = p_entry['name']
-            if p_entry.get('required', False) == True or not identify_optional:
+            if p_entry.get('required', False) or not identify_optional:
                 name_list.extend([parameter_name])
             else:
                 name_list.extend([f"[{parameter_name}]"])
@@ -622,9 +619,9 @@ class KodiObj():
         param_type = param.get('type', "String")
         return_types = type(param_type)
         LOGGER.debug(f'_get_types for: {param}')
-        if type(param_type) is str:
+        if isinstance(param_type, str):
             return_types = param_type
-        elif type(param_type) is list:
+        elif isinstance(param_type, list):
             types_list = []
             return_types = ""
             for token_type in param_type:
@@ -648,9 +645,9 @@ class KodiObj():
         else:
             r_types = ref_dict['type']
             ret_types = []
-            if type(r_types) is str:
+            if isinstance(r_types, str):
                 ret_types.extend([r_types])
-            elif type(r_types) is list:
+            elif isinstance(r_types, list):
                 for r_type in ref_dict['type']:
                     val = r_type.get('type')
                     if not val:

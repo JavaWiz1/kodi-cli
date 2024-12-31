@@ -58,6 +58,14 @@ When defining an object type parameter, create it as a pseudo dictionary as belo
 | command | A command is a namespace, method, parameter combiniation used to control Kodi function (fmt: Namespace.Method) |
 </br>
 
+Parameters can be one of the following types:
+
+- string (default)
+- boolean (true / false)
+- integer
+- list (`[ ... , ... ]`)
+- dict (`{ key: value, ... }`)
+
 ---
 
 ## Usage
@@ -358,3 +366,14 @@ Still TODO:
 - Edit parameters prior to call to avoid runtime error.
 - Provide additional help/runtime detail on parameters
 - Different output formats (rather than just raw and formatted json)
+
+---
+### Stream a URL
+
+```
+SYNTAX:
+    kodi-cli Player.Open item='{file:https://getsamplefiles.com/download/mkv/sample-1.mkv}'
+
+OUTPUT:
+{"id":1,"jsonrpc":"2.0","result":"OK"}
+```

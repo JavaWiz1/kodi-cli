@@ -2,7 +2,7 @@ import argparse
 import json
 import pathlib
 import textwrap
-from typing import Any, List, Tuple
+from typing import List
 
 from loguru import logger as LOGGER
 
@@ -168,7 +168,7 @@ def main():
         episodes = list()
         tv_shows = get_tv_shows(kodi)
         for tvshow in tv_shows:
-            show_name = tvshow['label']
+            # show_name = tvshow['label']
             for season in range(1,tvshow['season']):
                 season_episodes = get_tv_show_episodes(kodi, tvshow['label'], tvshow['tvshowid'], season )
                 if len(season_episodes) > 0:
