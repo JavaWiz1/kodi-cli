@@ -391,13 +391,17 @@ class KodiObj():
             if parm_value is None:
                 parm_value = parm_entry.get('default', None)
             if parm_value is not None:
-                LOGGER.trace(f'    Key    : {parm_name:15}  Value: {parm_value}')
-                if isinstance(parm_value, int):
+                if isinstance(parm_value, bool):
+                    LOGGER.trace('isBool')
+                    req_parms[parm_name] = "true" if parm_value else "false"
+                elif isinstance(parm_value, int):
                     req_parms[parm_name] = int(parm_value)
                 else:
                     req_parms[parm_name] = parm_value
+                LOGGER.trace(f'    Key    : {parm_name:15}  Value: {req_parms[parm_name]} {type(parm_value)}')
             else:
                 LOGGER.trace(f'    Key    : {parm_name:15}  Value: {parm_value} BYPASS')
+            
         LOGGER.trace('')
         return self._call_kodi(method, req_parms)
 
