@@ -319,14 +319,6 @@ class KodiObj():
             self._kodi_api_version = "Unknown"
         LOGGER.debug(f'  Kodi RPC Version: {self._kodi_api_version}')
         
-        # if LOGGER.getEffectiveLevel() == logging.DEBUG:
-        #     LOGGER.debug('HTTP Logging enabled.')
-        #     http.client.HTTPConnection.debuglevel = 1
-        #     self._requests_log = logging.getLogger("requests.packages.urllib3")
-        #     self._requests_log.setLevel(logging.DEBUG)
-        #     self._requests_log.propagate = True
-        #     http.client.print = self._http_client_print
-        
     def get_namespace_list(self) -> list:
         """Returns a list of the Kodi namespace objeccts"""
         return self._namespaces.keys()
