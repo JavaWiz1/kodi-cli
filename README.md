@@ -258,7 +258,7 @@ mute
 
 ```
 To use:
-``` kodi-cli -H kodi001 Application.SetMute mute=false ```
+``` kodi-cli -H kodi001 Application.SetMute mute=toggle ```
 
 </br></br>
 
