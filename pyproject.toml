@@ -1,6 +1,6 @@
 [project]
 name = "kodi-cli"
-version = "0.2.5"
+version = "0.2.6"
 description = "Control your Kodi instance(s) via the commandline"
 authors = [
     {name = "Al D'Amico",email = "JavaWiz1@hotmail.com"}
