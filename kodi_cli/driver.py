@@ -7,80 +7,13 @@ from typing import Tuple
 
 from loguru import logger as LOGGER
 
-import cfg
-import kodi_common as util
-import kodi_output_factory as output_factory
-from kodi_interface import KodiObj
+import kodi_cli.utils.cfg as cfg 
+import kodi_cli.utils.kodi_common as util
+import kodi_cli.utils.kodi_output_factory as output_factory
+from kodi_cli.kodi_interface import KodiObj
 
-# CSV_CAPABLE_COMMANDS =  {
-#     'Addons.GetAddons': 'addons',
-#     'AudioLibrary.GetAlbums': 'albums',
-#     'AudioLibrary.GetArtists': 'artists',
-#     'AudioLibrary.GetGenres': 'genres',
-#     'AudioLibrary.GetRecentlyAddedAlbums': 'albums',
-#     'AudioLibrary.GetRecentlyAddedSongs': 'songs',
-#     'AudioLibrary.GetRecentlyPlayedAlbums': 'albums',
-#     'AudioLibrary.GetRecentlyPlayedSongs': 'songs',
-#     'VideoLibrary.GetRecentlyAddedEpisodes': 'episodes' 
-#     }
-    
 
 __version__ = cfg.get_version()
-
-# # === Validation routines =================================================
-# def is_integer(token: str) -> bool:
-#     """Return true if string is an integer"""
-#     is_int = True
-#     try:
-#         int(token)
-#     except ValueError:
-#         is_int = False
-#     return is_int
-
-# def is_boolean(token: str) -> bool:
-#     """Return true if string is a boolean"""
-#     is_bool_str = False
-#     if token in ["True", "true", "False", "false"]:
-#         is_bool_str = True
-#     LOGGER.debug(f'  is_boolean({token}) returns {is_bool_str}')
-#     return is_bool_str
-
-# def is_list(token: str) -> bool:
-#     """Return true if string represents a list"""
-#     if token.startswith("[") and token.endswith("]"):
-#         return True
-#     return False
-
-# def is_dict(token: str) -> bool:
-#     """Return true if string represents a dictionary"""
-#     if token.startswith("{") and token.endswith("}"):
-#         return True
-#     return False
-
-# def make_list_from_string(token: str) -> list:
-#     """Translate list formatted string to a list obj"""
-#     text = token[1:-1]
-#     return text.split(",")
-
-# def make_dict_from_string(token: str) -> dict:
-#     """Translate dict formatted string to a dict obj"""
-#     text = token[1:-1]
-#     entry_list = text.split(",")
-#     result_dict = {}
-#     LOGGER.debug(f'make_dict_from_string({token})')
-#     for entry in entry_list:
-#         key_val = entry.split(":")
-#         LOGGER.debug(f'  key_val: {entry}')
-#         key = key_val[0].strip()
-#         value = key_val[1].strip()
-#         if is_integer(value):
-#             value=int(value)
-#         elif is_boolean(value):
-#             value = value in ['True', 'true']
-#         result_dict[key] = value
-
-#     LOGGER.debug(f'make_dict_from_string() returns: {result_dict}')
-#     return result_dict
 
 def build_kwargs_from_args(args: list) -> dict:
     kwargs = {}
@@ -166,8 +99,8 @@ def display_script_help(usage: str):
 def setup_logging(settings_dict: dict):
     # TODO: Externalize logging settings
     import logging
-    lg_format=settings_dict['log_format']
-    lg_level = settings_dict['log_level']
+    lg_format = settings_dict['log_format']
+    lg_level  = settings_dict['log_level']
     # logging.TRACE = logging.DEBUG + 5
     logging.basicConfig(format=lg_format, level=lg_level,)
 
@@ -210,15 +143,7 @@ def display_program_info():
 def initialize_loggers(args: argparse.Namespace):
     log_filename = pathlib.Path(cfg.logging_filename) # pathlib.Path('./logs/da-photo.log')
 
-    log_level = cfg.logging_level
-    # if args.verbose:
-    #     if args.verbose == 1:
-    #         log_level = 'INFO'
-    #     elif args.verbose == 2:
-    #         log_level = 'DEBUG'
-    #     elif args.verbose > 2:
-    #         log_level = 'TRACE' 
-        
+    log_level = cfg.logging_level        
     if log_level.upper() == 'INFO':
         console_format = cfg.DEFAULT_CONSOLE_LOGFMT
     else:
@@ -242,7 +167,7 @@ def apply_overrides(args: argparse.Namespace):
     for key, val in args._get_kwargs():
         cfg_val = getattr(cfg, key, None)
         if cfg_val is not None and cfg_val != val:
-            LOGGER.debug(f'CmdLine Override: {key}: {val}')
+            # LOGGER.debug(f'CmdLine Override: {key}: {val}')
             setattr(cfg, key, val)
     
     if args.verbose:

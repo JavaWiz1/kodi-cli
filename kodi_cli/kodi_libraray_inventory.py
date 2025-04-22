@@ -6,9 +6,9 @@ from typing import List
 
 from loguru import logger as LOGGER
 
-import cfg
-import kodi_common as util
-from kodi_interface import KodiObj
+import kodi_cli.utils.cfg as cfg
+import kodi_cli.utils.kodi_common as util
+from kodi_cli.kodi_interface import KodiObj
 
 EPISODE_FILE='./episodes.csv'
 MOVIE_FILE='./movies.csv'

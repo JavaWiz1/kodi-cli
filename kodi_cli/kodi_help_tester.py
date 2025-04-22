@@ -1,6 +1,6 @@
 import sys
 
-from kodi_interface import KodiObj
+from kodi_cli.kodi_interface import KodiObj
 
     
 def get_input(prompt: str = "> ", choices: list = [], required = False) -> str:
