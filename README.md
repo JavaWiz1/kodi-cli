@@ -8,8 +8,13 @@ The available commands are defined via jsons files ([**methods.json and types.js
 
 **Note** 
 - Namespace Methods and Types are case-sensitive.  Use help parameter or refer to the [Kodi RPC page](https://kodi.wiki/view/JSON-RPC_API/v12) for proper capitalization.
-- An *entrypoint* is created on install that allows the script to be run without specifying ***python kodi_cli.py***, simply type ***kodi-cli*** to execute the script.
-</br></br>
+
+- An *entrypoint* is created on install that allows the script to be run without specifying ***python kodi_cli/driver.py***, simply type ***kodi-cli*** to execute the script.
+
+- [Poetry](https://python-poetry.org/) was used in development for dependency and package management.  If you are running directly from source: 
+  - first do a ***poetry install*** to create a virtual environment with the dependencies.
+  - then to run: ***poetry run python kodi_cli.driver.py***.
+
 The documentation will reflect calls using the entrypoint (*kodi-cli*) as described above.
 
 
@@ -124,7 +129,7 @@ Details for namespaces, methods and type parameters may be found at https://kodi
 ---
 ## Prerequsites:
 
-**Python 3.7+**<br>
+**Python 3.8+**<br>
 **Python packages**
 - requests package
 - loguru
@@ -142,15 +147,13 @@ Code can be installed via pip or [pipx](https://github.com/pypa/pipx):
 ## Usage Examples
 ---
 ### Create a config file to store defaults
-To minimize command-line entry, you can store defaults in a config file which will default values on startup.  The
-values can be over-ridded at run-time by providing the optional command-line argument.
+To minimize command-line entry, you can store defaults in a config file which will default values on startup.  The values can be over-ridded at run-time by providing the optional command-line argument.
 
-To create a default config file, type your standard defaults as if you were going to execute the CLI and add -C (or -CO)
-at the end.
+To create a default config file, type your standard defaults as if you were going to execute the CLI and add -C (or -CO) at the end.
 The config file will be written with the values.
 ```
 SYNTAX:
-  kodi-cli -u myId -p myPassword -P 8080 -C
+  kodi-cli -H LibreElec1 -u myId -p myPassword -P 8080 -C
 
 OUTPUT:
   a file kodi_cli.cfg will be written as:
@@ -164,12 +167,12 @@ logging_level = INFO
 logger_blacklist = 
 
 [SERVER]
-host = localhost
+host = LibreElec1
 port = 8080
 
 [LOGIN]
-kodi_user = kodi
-kodi_pw = kodi
+kodi_user = myId
+kodi_pw = myPassword
 
 [OUTPUT]
 format_output = False
