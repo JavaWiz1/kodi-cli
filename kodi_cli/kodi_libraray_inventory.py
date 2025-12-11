@@ -78,7 +78,7 @@ def get_movies(kodi: KodiObj) -> list:
 
     return movies
 
-def create_csv(file_nm: str, entries: list) -> bool:
+def create_csv(file_nm: str, entries: list) -> None:
     header_list = [x for x in entries[0].keys()]
     header_line = ','.join(header_list)
     with pathlib.Path(file_nm).open('w', encoding='UTF-8') as csv_out:
