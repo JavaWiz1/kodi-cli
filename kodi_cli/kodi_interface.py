@@ -82,7 +82,7 @@ class HelpParameter():
                         r_enums = ref_block.get('enums',[])
                         self.types = self._get_types(ref_block)
                     elif r_types == "boolean":
-                        r_enums = ['True','False']
+                        r_enums = [True,False]
                 elif isinstance(r_types, list):
                     for r_type in r_types:
                         if isinstance(r_type) is dict:
@@ -382,7 +382,7 @@ class KodiObj():
             if parm_value is not None:
                 if isinstance(parm_value, bool):
                     LOGGER.trace('isBool')
-                    req_parms[parm_name] = "true" if parm_value else "false"
+                    req_parms[parm_name] = True if parm_value else False
                 elif isinstance(parm_value, int):
                     req_parms[parm_name] = int(parm_value)
                 else:

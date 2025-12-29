@@ -10,22 +10,15 @@ def is_integer(token: str) -> bool:
 
 def is_boolean(token: str) -> bool:
     """Return true if string is a boolean"""
-    is_bool_str = False
-    if token in ["True", "true", "False", "false"]:
-        is_bool_str = True
-    return is_bool_str
+    return token in ["True", "true", "False", "false"]
 
 def is_list(token: str) -> bool:
     """Return true if string represents a list"""
-    if token.startswith("[") and token.endswith("]"):
-        return True
-    return False
+    return token.startswith("[") and token.endswith("]")
 
 def is_dict(token: str) -> bool:
     """Return true if string represents a dictionary"""
-    if token.startswith("{") and token.endswith("}"):
-        return True
-    return False
+    return token.startswith("{") and token.endswith("}")
 
 def make_list_from_string(token: str) -> list:
     """Translate list formatted string to a list obj"""
